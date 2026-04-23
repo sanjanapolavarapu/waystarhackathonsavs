@@ -55,7 +55,8 @@ function normalizeFieldOrder(fields: CustomField[]) {
   return fields.map((field, index) => ({ ...field, order: index }));
 }
 
-export default function AdminPageEditor({ params }: { params: { slug: string } }) {
+export default function AdminPageEditor({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = React.use(params);
   const [page, setPage] = React.useState<PaymentPage>(EMPTY_PAGE);
   const [newFieldId, setNewFieldId] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(true);
@@ -72,7 +73,7 @@ export default function AdminPageEditor({ params }: { params: { slug: string } }
       setLoadError(null);
 
       try {
-        const loaded = await getPageBySlug(params.slug);
+        const loaded = await getPageBySlug(slug);
         if (cancelled) return;
 
         if (!loaded) {
@@ -94,7 +95,7 @@ export default function AdminPageEditor({ params }: { params: { slug: string } }
     return () => {
       cancelled = true;
     };
-  }, [params.slug]);
+  }, [slug]);
   const glValidation = validateGlCodes(page.glCodes);
 
   const amountModeUi: "fixed" | "range" | "custom" =
@@ -216,8 +217,6 @@ export default function AdminPageEditor({ params }: { params: { slug: string } }
           <Button variant="ghost" className="hover:bg-white/60">
             Save draft
           </Button>
-          <Button variant="primary" onClick={handlePublish} disabled={saving}>
-            {saving ? "Saving..." : "Publish"}
           <Button variant="primary" onClick={handlePublish} disabled={saving || !glValidation.valid}>
             {saving ? "Saving..." : "Publish"}
           </Button>

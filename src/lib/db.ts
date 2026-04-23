@@ -3,6 +3,7 @@ import type { CustomField, PaymentPage, Transaction } from "@/lib/qpp-types";
 
 type PaymentPageRow = {
   id: string;
+  organization_id?: string;
   slug: string;
   is_active: boolean;
   title: string;
@@ -185,7 +186,8 @@ export async function listPages(): Promise<PaymentPage[]> {
 export async function savePage(page: PaymentPage): Promise<void> {
   const client = requireSupabase();
 
-  const { error: upsertError } = await client.from("payment_pages").upsert(mapPageToRow(page));
+  const row = mapPageToRow(page);
+  const { error: upsertError } = await client.from("payment_pages").upsert(row);
   if (upsertError) throw upsertError;
 
   const { error: deleteError } = await client.from("custom_fields").delete().eq("page_id", page.id);
