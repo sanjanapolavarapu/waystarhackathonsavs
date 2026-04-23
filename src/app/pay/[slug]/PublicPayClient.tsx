@@ -5,7 +5,6 @@ import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
 
 import type { PaymentPage } from "@/lib/qpp-types";
-import { getPageBySlug } from "@/lib/mock-qpp";
 import { getSupabaseClient } from "@/lib/supabase";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,8 +23,9 @@ function fmtMoney(cents: number) {
 }
 
 export function PublicPayClient({ slug }: { slug: string }) {
-  const [page, setPage] = React.useState<PaymentPage | null>(() => getPageBySlug(slug));
+  const [page, setPage] = React.useState<PaymentPage | null>(null);
   const [loadError, setLoadError] = React.useState<string | null>(null);
+  const [notFound, setNotFound] = React.useState(false);
   const [logoBroken, setLogoBroken] = React.useState(false);
   const visitRowIdRef = React.useRef<string | null>(null);
   const formStartedSentRef = React.useRef(false);
@@ -48,12 +48,23 @@ export function PublicPayClient({ slug }: { slug: string }) {
     void (async () => {
       try {
         const res = await fetch(`/api/payment-pages/${encodeURIComponent(slug)}`);
+        if (res.status === 404) {
+          if (cancelled) return;
+          queueMicrotask(() => {
+            if (cancelled) return;
+            setNotFound(true);
+            setLoadError(null);
+            setPage(null);
+          });
+          return;
+        }
         const json = (await res.json()) as { page?: PaymentPage | null; error?: string };
         if (!res.ok) throw new Error(json.error || "Failed to load page");
         if (cancelled) return;
-        const next = json.page ?? getPageBySlug(slug);
+        const next = json.page ?? null;
         queueMicrotask(() => {
           if (cancelled) return;
+          setNotFound(false);
           setLoadError(null);
           setPage(next);
         });
@@ -61,8 +72,9 @@ export function PublicPayClient({ slug }: { slug: string }) {
         const msg = e instanceof Error ? e.message : "Failed to load page";
         queueMicrotask(() => {
           if (cancelled) return;
+          setNotFound(false);
           setLoadError(msg);
-          setPage(getPageBySlug(slug));
+          setPage(null);
         });
       }
     })();
@@ -96,7 +108,7 @@ export function PublicPayClient({ slug }: { slug: string }) {
     })();
   }, [page?.id, page?.slug]);
 
-  if (!page) {
+  if (notFound) {
     return (
       <div className="min-h-screen px-6 py-16">
         <div className="mx-auto max-w-md text-center">
@@ -108,6 +120,28 @@ export function PublicPayClient({ slug }: { slug: string }) {
             </Link>
             <Link href="/admin/pages">
               <Button variant="primary">Admin UI</Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!page) {
+    return (
+      <div className="min-h-screen px-6 py-16">
+        <div className="mx-auto max-w-md text-center">
+          <div className="text-xl font-semibold text-zinc-900">Loading payment page…</div>
+          {loadError ? (
+            <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              {loadError}
+            </div>
+          ) : (
+            <div className="mt-2 text-sm text-zinc-500">Please wait a moment.</div>
+          )}
+          <div className="mt-6 flex justify-center gap-2">
+            <Link href="/admin/pages">
+              <Button variant="secondary">Admin UI</Button>
             </Link>
           </div>
         </div>

@@ -4,18 +4,6 @@ import { getSelectedOrgId } from "@/lib/org";
 import { fromPaymentPagesRow } from "@/lib/paymentPagesDb";
 import { fromCustomFieldRow } from "@/lib/customFieldsDb";
 
-async function jsonOrThrow<T>(res: Response): Promise<T> {
-  const json = (await res.json().catch(() => ({}))) as unknown;
-  if (!res.ok) {
-    const msg =
-      typeof (json as { error?: unknown } | null)?.error === "string"
-        ? String((json as { error?: string }).error)
-        : `HTTP ${res.status}`;
-    throw new Error(msg);
-  }
-  return json as T;
-}
-
 function requireSupabase() {
   const client = getSupabaseClient();
   if (!client) throw new Error("Supabase not configured");

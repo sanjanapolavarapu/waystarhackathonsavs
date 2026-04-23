@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { buildPublicPayUrl } from "@/lib/public-url";
 
 export default function AdminPagesClient() {
   const [pages, setPages] = React.useState<PaymentPage[]>([]);
@@ -141,6 +142,15 @@ export default function AdminPagesClient() {
                       </td>
                       <td className="px-5 py-4">
                         <div className="flex justify-end gap-2">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={async () => {
+                              await navigator.clipboard.writeText(buildPublicPayUrl(p.slug));
+                            }}
+                          >
+                            Copy link
+                          </Button>
                           <Link href={`/pay/${p.slug}`}>
                             <Button variant="secondary" size="sm">
                               View

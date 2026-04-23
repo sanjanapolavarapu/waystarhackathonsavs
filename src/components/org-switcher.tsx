@@ -51,7 +51,9 @@ export function OrgSwitcher({ className }: { className?: string }) {
       setOrgs(next);
 
       // If the selected org no longer exists (deleted / membership removed), clear it.
-      if (selectedId && !next.some((o) => o.id === selectedId)) {
+      // Important: don't clear selection just because the list is temporarily empty
+      // (e.g. immediately after creating an org before membership rows/triggers propagate).
+      if (selectedId && next.length > 0 && !next.some((o) => o.id === selectedId)) {
         setSelectedId(null);
         setSelectedOrgId("");
         router.refresh();
