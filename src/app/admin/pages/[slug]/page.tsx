@@ -3,6 +3,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import QRCode from "qrcode";
 import {
   ChevronDown,
   Copy,
@@ -402,17 +403,7 @@ export default function AdminPageEditor({ params }: { params: { slug: string } }
               </div>
 
               <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-xs font-medium text-zinc-600">QR code</div>
-                    <div className="mt-1 text-xs text-zinc-500">
-                      UI placeholder — teammates can render QR via a library.
-                    </div>
-                  </div>
-                  <div className="h-12 w-12 rounded-2xl border border-zinc-200 bg-zinc-50 grid place-items-center text-zinc-700">
-                    <QrCode className="h-5 w-5" />
-                  </div>
-                </div>
+                <QRCodePanel url={publicUrl} title={page.title} />
               </div>
             </CardContent>
           </Card>
@@ -505,6 +496,111 @@ function PreviewShell({
 
 function fmtMoney(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
+}
+
+function downloadBlob(filename: string, blob: Blob) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function QRCodePanel({ url, title }: { url: string; title: string }) {
+  const [pngDataUrl, setPngDataUrl] = React.useState<string | null>(null);
+  const [svg, setSvg] = React.useState<string | null>(null);
+  const [error, setError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    setError(null);
+    setPngDataUrl(null);
+    setSvg(null);
+
+    void (async () => {
+      try {
+        const [png, svgString] = await Promise.all([
+          QRCode.toDataURL(url, {
+            margin: 2,
+            scale: 8,
+            errorCorrectionLevel: "M",
+            color: { dark: "#0f172a", light: "#ffffff" },
+          }),
+          QRCode.toString(url, {
+            type: "svg",
+            margin: 2,
+            errorCorrectionLevel: "M",
+            color: { dark: "#0f172a", light: "#ffffff" },
+          }),
+        ]);
+        if (cancelled) return;
+        setPngDataUrl(png);
+        setSvg(svgString);
+      } catch {
+        if (cancelled) return;
+        setError("Could not generate QR code.");
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [url]);
+
+  const safeSlug = title
+    .toLowerCase()
+    .replaceAll(/[^a-z0-9]+/g, "-")
+    .replaceAll(/(^-|-$)/g, "");
+
+  return (
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-center gap-3">
+        <div className="h-14 w-14 rounded-2xl border border-zinc-200 bg-zinc-50 grid place-items-center overflow-hidden">
+          {pngDataUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={pngDataUrl} alt={`QR code for ${url}`} className="h-full w-full" />
+          ) : (
+            <QrCode className="h-6 w-6 text-zinc-700" aria-hidden="true" />
+          )}
+        </div>
+        <div className="min-w-0">
+          <div className="text-xs font-medium text-zinc-600">QR code</div>
+          <div className="mt-1 text-xs text-zinc-500 truncate font-mono">{url}</div>
+          {error ? <div className="mt-1 text-xs text-red-600">{error}</div> : null}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 justify-end">
+        <Button
+          variant="secondary"
+          size="sm"
+          disabled={!svg}
+          onClick={() => {
+            if (!svg) return;
+            downloadBlob(`${safeSlug || "qpp"}-qr.svg`, new Blob([svg], { type: "image/svg+xml" }));
+          }}
+        >
+          Download SVG
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          disabled={!pngDataUrl}
+          onClick={async () => {
+            if (!pngDataUrl) return;
+            const res = await fetch(pngDataUrl);
+            const blob = await res.blob();
+            downloadBlob(`${safeSlug || "qpp"}-qr.png`, blob);
+          }}
+        >
+          Download PNG
+        </Button>
+      </div>
+    </div>
+  );
 }
 
 function PaymentPreview({ page }: { page: PaymentPage }) {
