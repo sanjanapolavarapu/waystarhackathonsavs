@@ -4,6 +4,7 @@ import * as React from "react";
 import {
   BarChart3,
   ChevronDown,
+  ChevronUp,
   Copy,
   Eye,
   LayoutGrid,
@@ -24,7 +25,7 @@ import { cn } from "@/lib/utils";
 type CustomField = {
   id: string;
   label: string;
-  type: "Text" | "Date";
+  type: "Text" | "Number" | "Dropdown" | "Date" | "Checkbox";
 };
 
 const BRAND_COLORS = [
@@ -75,6 +76,7 @@ export default function Home() {
     { id: "reference", label: "Reference ID", type: "Text" },
   ]);
   const [stats, setStats] = React.useState<StatItem[]>(DEFAULT_STATS);
+  const [newFieldId, setNewFieldId] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     let isMounted = true;
@@ -82,8 +84,7 @@ export default function Home() {
     async function loadStats() {
       const supabase = getSupabaseClient();
       if (!supabase) {
-        // Supabase isn't configured in env (common right after pulling from git).
-        // Keep the UI functional with defaults rather than crashing the build/runtime.
+        // Env not configured; keep default/fallback stats and avoid runtime crashes.
         setStats(DEFAULT_STATS);
         return;
       }
@@ -206,16 +207,38 @@ export default function Home() {
       isMounted = false;
     };
   }, []);
-
   function addField() {
+    const id = `field_${Date.now()}`;
+    setNewFieldId(id);
     setCustomFields((prev) => [
       ...prev,
-      { id: `field_${prev.length + 1}`, label: "New Field", type: "Text" },
+      { id, label: "", type: "Text" },
     ]);
   }
 
   function removeField(id: string) {
     setCustomFields((prev) => prev.filter((f) => f.id !== id));
+  }
+
+  function updateField(id: string, updates: Partial<CustomField>) {
+    setCustomFields((prev) =>
+      prev.map((field) => (field.id === id ? { ...field, ...updates } : field)),
+    );
+  }
+
+  function moveField(id: string, direction: "up" | "down") {
+    setCustomFields((prev) => {
+      const index = prev.findIndex((field) => field.id === id);
+      if (index < 0) return prev;
+
+      const targetIndex = direction === "up" ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= prev.length) return prev;
+
+      const next = prev.slice();
+      const [moved] = next.splice(index, 1);
+      next.splice(targetIndex, 0, moved);
+      return next;
+    });
   }
 
   return (
@@ -385,25 +408,84 @@ export default function Home() {
                   }
                 >
                   <div className="space-y-3">
-                    {customFields.map((f) => (
+                    {customFields.map((f, index) => (
                       <div
                         key={f.id}
-                        className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-3 py-2 shadow-sm transition hover:shadow-md"
+                        className={cn(
+                          "rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm transition hover:shadow-md",
+                          newFieldId === f.id && "border-indigo-300 ring-2 ring-indigo-200/70",
+                        )}
                       >
-                        <div className="min-w-0 flex-1">
-                          <div className="text-sm font-medium text-zinc-900">
-                            {f.label}
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto_auto_auto] sm:items-end">
+                          <div className="space-y-1.5">
+                            <label
+                              htmlFor={`field-label-${f.id}`}
+                              className="text-xs font-medium text-zinc-600"
+                            >
+                              Field name
+                            </label>
+                            <Input
+                              id={`field-label-${f.id}`}
+                              value={f.label}
+                              onChange={(e) =>
+                                updateField(f.id, { label: e.target.value })
+                              }
+                              autoFocus={newFieldId === f.id}
+                              onFocus={() => {
+                                if (newFieldId === f.id) setNewFieldId(null);
+                              }}
+                            />
                           </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="inline-flex items-center gap-1 rounded-lg border border-zinc-200 bg-zinc-50 px-2 py-1 text-xs font-medium text-zinc-700">
-                            {f.type}
-                            <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+                          <div className="space-y-1.5">
+                            <label
+                              htmlFor={`field-type-${f.id}`}
+                              className="text-xs font-medium text-zinc-600"
+                            >
+                              Type
+                            </label>
+                            <select
+                              id={`field-type-${f.id}`}
+                              value={f.type}
+                              onChange={(e) =>
+                                updateField(f.id, {
+                                  type: e.target.value as CustomField["type"],
+                                })
+                              }
+                              className="h-11 rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
+                            >
+                              <option value="Text">Text</option>
+                              <option value="Number">Number</option>
+                              <option value="Dropdown">Dropdown</option>
+                              <option value="Date">Date</option>
+                              <option value="Checkbox">Checkbox</option>
+                            </select>
+                          </div>
+                          <div className="flex items-center gap-1 sm:pb-0.5">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => moveField(f.id, "up")}
+                              disabled={index === 0}
+                              aria-label={`Move ${f.label || "field"} up`}
+                            >
+                              <ChevronUp className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => moveField(f.id, "down")}
+                              disabled={index === customFields.length - 1}
+                              aria-label={`Move ${f.label || "field"} down`}
+                            >
+                              <ChevronDown className="h-4 w-4" />
+                            </Button>
                           </div>
                           <button
                             type="button"
                             onClick={() => removeField(f.id)}
-                            className="h-9 w-9 rounded-xl hover:bg-zinc-100 text-zinc-500"
+                            className="h-11 w-11 rounded-xl hover:bg-zinc-100 text-zinc-500"
                             aria-label={`Remove ${f.label}`}
                           >
                             ×
@@ -623,7 +705,15 @@ function PaymentPreview({
             <div key={f.id} className="space-y-1.5">
               <div className="text-xs font-medium text-zinc-600">{f.label}</div>
               <div className="h-11 rounded-xl border border-zinc-200 bg-zinc-50 px-4 flex items-center text-sm text-zinc-400">
-                {f.type === "Date" ? "mm/dd/yyyy" : "Enter text"}
+                {f.type === "Date"
+                  ? "mm/dd/yyyy"
+                  : f.type === "Dropdown"
+                    ? "Select option"
+                    : f.type === "Checkbox"
+                      ? "□"
+                      : f.type === "Number"
+                        ? "Enter number"
+                        : "Enter text"}
               </div>
             </div>
           ))}
