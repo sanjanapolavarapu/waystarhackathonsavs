@@ -64,6 +64,7 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
   const [saving, setSaving] = React.useState(false);
   const [saveSuccess, setSaveSuccess] = React.useState<string | null>(null);
   const [saveError, setSaveError] = React.useState<string | null>(null);
+  const [dismissedInsights, setDismissedInsights] = React.useState<Set<string>>(() => new Set());
 
   React.useEffect(() => {
     let cancelled = false;
@@ -273,6 +274,51 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
                     />
                     <div className="text-sm font-mono text-zinc-700">{page.brandColor}</div>
                   </div>
+
+                  <div className="mt-4 space-y-2">
+                    <label htmlFor="page-logo-url" className="text-xs font-medium text-zinc-600">
+                      Logo URL
+                    </label>
+                    <Input
+                      id="page-logo-url"
+                      value={page.logoUrl ?? ""}
+                      onChange={(e) =>
+                        setPage((p) => ({
+                          ...p,
+                          logoUrl: e.target.value.trim() ? e.target.value : undefined,
+                        }))
+                      }
+                      placeholder="https://example.com/logo.png"
+                    />
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="text-xs text-zinc-500">PNG, JPG, or SVG URL</div>
+                      {page.logoUrl ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setPage((p) => ({ ...p, logoUrl: undefined }))}
+                          aria-label="Remove logo URL"
+                        >
+                          Remove logo
+                        </Button>
+                      ) : null}
+                    </div>
+
+                    {page.logoUrl ? (
+                      <div className="rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm">
+                        <div className="text-xs font-medium text-zinc-600">Logo preview</div>
+                        <div className="mt-2 h-12 w-12 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={page.logoUrl}
+                            alt="Payment page logo preview"
+                            className="h-full w-full object-contain"
+                          />
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
               </Section>
 
@@ -293,12 +339,14 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
                   </Field>
                   <Field label="Subtitle / description">
                     <Input
+                      id="page-insights-subtitle"
                       value={page.subtitle ?? ""}
                       onChange={(e) => setPage((p) => ({ ...p, subtitle: e.target.value }))}
                     />
                   </Field>
                   <Field label="Custom header message">
                     <Input
+                      id="page-insights-header-message"
                       value={page.headerMessage ?? ""}
                       onChange={(e) => setPage((p) => ({ ...p, headerMessage: e.target.value }))}
                       placeholder="Optional"
@@ -620,6 +668,27 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
                   </div>
                 </div>
               </Section>
+
+              <PageInsightsSection
+                page={page}
+                dismissed={dismissedInsights}
+                onDismiss={(id) =>
+                  setDismissedInsights((prev) => {
+                    const next = new Set(prev);
+                    next.add(id);
+                    return next;
+                  })
+                }
+                onApplyTooManyFields={() => {
+                  setPage((p) => {
+                    const ordered = p.fields.slice().sort((a, b) => a.order - b.order);
+                    const nextFields = ordered.map((field, index) =>
+                      index >= 5 && field.required ? { ...field, required: false } : field,
+                    );
+                    return { ...p, fields: normalizeFieldOrder(nextFields) };
+                  });
+                }}
+              />
             </CardContent>
           </Card>
 
@@ -687,6 +756,184 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
                 Open public page
               </Button>
             </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const INSIGHT_IDS = {
+  tooManyFields: "too-many-fields",
+  noCustomFields: "no-custom-fields",
+  noLogo: "no-logo",
+  missingSubtitle: "missing-subtitle",
+  welcomeHeader: "welcome-header",
+} as const;
+
+function PageInsightsSection({
+  page,
+  dismissed,
+  onDismiss,
+  onApplyTooManyFields,
+}: {
+  page: PaymentPage;
+  dismissed: Set<string>;
+  onDismiss: (id: string) => void;
+  onApplyTooManyFields: () => void;
+}) {
+  const n = page.fields.length;
+
+  const candidates: Array<{
+    id: string;
+    kind: "warning" | "info";
+    title: string;
+    message: string;
+    apply?: () => void;
+  }> = [];
+
+  if (n > 5 && !dismissed.has(INSIGHT_IDS.tooManyFields)) {
+    candidates.push({
+      id: INSIGHT_IDS.tooManyFields,
+      kind: "warning",
+      title: "Too many fields",
+      message: `You have ${n} fields. Pages with 5 or fewer fields convert 40% better. Consider making some optional.`,
+      apply: onApplyTooManyFields,
+    });
+  }
+  if (n === 0 && !dismissed.has(INSIGHT_IDS.noCustomFields)) {
+    candidates.push({
+      id: INSIGHT_IDS.noCustomFields,
+      kind: "warning",
+      title: "No custom fields",
+      message: "Adding fields like name and email helps you identify payers and improves trust.",
+    });
+  }
+  if (!page.logoUrl && !dismissed.has(INSIGHT_IDS.noLogo)) {
+    candidates.push({
+      id: INSIGHT_IDS.noLogo,
+      kind: "info",
+      title: "No logo uploaded",
+      message: "Pages with a logo appear more trustworthy and convert better.",
+    });
+  }
+  if (!page.subtitle && !dismissed.has(INSIGHT_IDS.missingSubtitle)) {
+    candidates.push({
+      id: INSIGHT_IDS.missingSubtitle,
+      kind: "info",
+      title: "Missing description",
+      message: "A subtitle helps payers understand what they're paying for before they fill out the form.",
+      apply: () => {
+        queueMicrotask(() => document.getElementById("page-insights-subtitle")?.focus());
+      },
+    });
+  }
+  if (
+    (page.headerMessage === undefined || page.headerMessage === "") &&
+    !dismissed.has(INSIGHT_IDS.welcomeHeader)
+  ) {
+    candidates.push({
+      id: INSIGHT_IDS.welcomeHeader,
+      kind: "info",
+      title: "Add a welcome message",
+      message: "A short header message increases payer confidence.",
+      apply: () => {
+        queueMicrotask(() => document.getElementById("page-insights-header-message")?.focus());
+      },
+    });
+  }
+
+  return (
+    <Section
+      title="Page Insights"
+      icon={
+        <div className="h-9 w-9 rounded-2xl bg-violet-50 border border-violet-100 grid place-items-center text-violet-700 text-sm font-semibold">
+          ✦
+        </div>
+      }
+    >
+      <div className="space-y-3">
+        {candidates.length === 0 ? (
+          <div
+            className="rounded-2xl border border-emerald-200 bg-emerald-50/80 px-4 py-3 text-sm text-emerald-900"
+            role="status"
+            aria-live="polite"
+          >
+            ✅ Page looks good!
+          </div>
+        ) : (
+          candidates.map((c) => (
+            <InsightSuggestionCard
+              key={c.id}
+              id={c.id}
+              kind={c.kind}
+              title={c.title}
+              message={c.message}
+              hasApply={Boolean(c.apply)}
+              onApply={
+                c.apply
+                  ? () => {
+                      c.apply?.();
+                      onDismiss(c.id);
+                    }
+                  : undefined
+              }
+              onDismiss={() => onDismiss(c.id)}
+            />
+          ))
+        )}
+      </div>
+    </Section>
+  );
+}
+
+function InsightSuggestionCard({
+  id,
+  kind,
+  title,
+  message,
+  hasApply,
+  onApply,
+  onDismiss,
+}: {
+  id: string;
+  kind: "warning" | "info";
+  title: string;
+  message: string;
+  hasApply: boolean;
+  onApply?: () => void;
+  onDismiss: () => void;
+}) {
+  const titleId = `page-insight-title-${id}`;
+  const isWarning = kind === "warning";
+
+  return (
+    <div
+      role="region"
+      aria-labelledby={titleId}
+      className={cn(
+        "rounded-2xl border px-4 py-3 shadow-sm",
+        isWarning ? "border-amber-200 bg-amber-50/90" : "border-sky-200 bg-sky-50/90",
+      )}
+    >
+      <div className="flex gap-3">
+        <span className="text-lg shrink-0" aria-hidden="true">
+          {isWarning ? "⚠️" : "💡"}
+        </span>
+        <div className="min-w-0 flex-1 space-y-2">
+          <div id={titleId} className="text-sm font-semibold text-zinc-900">
+            {title}
+          </div>
+          <p className="text-sm text-zinc-700">{message}</p>
+          <div className="flex flex-wrap gap-2 pt-1">
+            {hasApply && onApply ? (
+              <Button type="button" variant="secondary" size="sm" onClick={onApply}>
+                Apply
+              </Button>
+            ) : null}
+            <Button type="button" variant="ghost" size="sm" className="text-zinc-700" onClick={onDismiss}>
+              Dismiss
+            </Button>
           </div>
         </div>
       </div>

@@ -18,6 +18,7 @@ type Field = {
 type AmountMode = "FIXED" | "RANGE" | "USER_ENTERED";
 
 export function PayClient({
+  pageSlug,
   pageTitle,
   amountMode,
   fixedAmountCents,
@@ -25,6 +26,7 @@ export function PayClient({
   maxAmountCents,
   fields,
 }: {
+  pageSlug: string;
   pageTitle: string;
   amountMode: AmountMode;
   fixedAmountCents?: number | null;
@@ -78,6 +80,7 @@ export function PayClient({
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
+          pageSlug,
           amount: resolvedAmountCents,
           payerEmail: payerEmail.trim(),
         }),

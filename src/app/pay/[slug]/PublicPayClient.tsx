@@ -129,6 +129,7 @@ export function PublicPayClient({ slug }: { slug: string }) {
             ) : null}
 
             <PayClient
+              pageSlug={page.slug}
               pageTitle={page.title}
               amountMode={page.amountMode}
               fixedAmountCents={page.fixedAmountCents}

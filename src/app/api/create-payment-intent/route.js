@@ -8,10 +8,13 @@ export async function POST(request) {
   try {
     const body = await request.json();
     // amount must be in CENTS (e.g., $25.00 = 2500)
-    const { amount, payerEmail } = body; 
+    const { amount, payerEmail, pageSlug } = body; 
 
     if (!Number.isFinite(amount) || amount <= 0) {
       return NextResponse.json({ error: 'Invalid amount.' }, { status: 400 });
+    }
+    if (typeof pageSlug !== "string" || !pageSlug.trim()) {
+      return NextResponse.json({ error: "Missing pageSlug." }, { status: 400 });
     }
 
     const paymentIntent = await stripe.paymentIntents.create({
@@ -30,9 +33,25 @@ export async function POST(request) {
     // We try a "rich" upsert first; if your schema doesn't have these columns yet,
     // we fall back to only the columns we know are queried in the UI.
     const amountDollars = paymentIntent.amount ? paymentIntent.amount / 100 : amount / 100;
+    let pageId = null;
+    let organizationId = null;
+
+    const supabaseAdmin = getSupabaseAdmin();
+    if (supabaseAdmin) {
+      const { data: pageRow } = await supabaseAdmin
+        .from("payment_pages")
+        .select("id, organization_id")
+        .eq("slug", pageSlug)
+        .maybeSingle();
+      pageId = pageRow?.id ?? null;
+      organizationId = pageRow?.organization_id ?? null;
+    }
     const baseRow = {
       amount: amountDollars,
       status: paymentIntent.status,
+      page_slug: pageSlug,
+      ...(pageId ? { page_id: pageId } : {}),
+      ...(organizationId ? { organization_id: organizationId } : {}),
     };
 
     const richRow = {
@@ -42,7 +61,6 @@ export async function POST(request) {
       currency: paymentIntent.currency ?? 'usd',
     };
 
-    const supabaseAdmin = getSupabaseAdmin();
     if (supabaseAdmin) {
       const richUpsert = await supabaseAdmin
         .from('transactions')
