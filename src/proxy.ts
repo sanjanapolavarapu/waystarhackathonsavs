@@ -21,8 +21,8 @@ async function hasValidAdminCookie(req: NextRequest) {
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Allow auth endpoints and login page without session.
-  if (pathname === "/admin/login") {
+  // Allow auth endpoints and auth pages without session.
+  if (pathname === "/admin/login" || pathname === "/admin/signup") {
     const ok = await hasValidAdminCookie(req);
     if (ok) return NextResponse.redirect(new URL("/admin/pages", req.url));
     return NextResponse.next();

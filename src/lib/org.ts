@@ -17,7 +17,8 @@ export function getSelectedOrgId() {
 export function setSelectedOrgId(orgId: string) {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(STORAGE_KEY, orgId);
+    if (!orgId) window.localStorage.removeItem(STORAGE_KEY);
+    else window.localStorage.setItem(STORAGE_KEY, orgId);
   } catch {
     // ignore
   }

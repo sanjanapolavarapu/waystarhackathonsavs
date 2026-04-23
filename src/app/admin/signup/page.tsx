@@ -10,57 +10,53 @@ import { Input } from "@/components/ui/input";
 import { getSupabaseClient } from "@/lib/supabase";
 import { setSelectedOrgId } from "@/lib/org";
 
-export default function AdminLoginPage() {
+export default function AdminSignupPage() {
   const router = useRouter();
 
-  const [email, setEmail] = React.useState("owner@demo.com");
+  const [name, setName] = React.useState("");
+  const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
+  const [note, setNote] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setNote(null);
     setLoading(true);
     try {
-      const res = await fetch("/api/auth/login", {
+      const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ name, email, password }),
       });
       const data = (await res.json().catch(() => null)) as
-        | { ok?: boolean; error?: string; detail?: string }
+        | { ok?: boolean; error?: string; detail?: string; note?: string; session?: { access_token: string; refresh_token: string } | null }
         | null;
+
       if (!res.ok || !data?.ok) {
         setError(
           data?.error === "supabase_not_configured"
-            ? "Supabase isn’t configured yet. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to .env.local."
-            : data?.error === "supabase_auth_failed"
-              ? data.detail || "Supabase login failed."
-              : "Invalid email or password.",
+            ? "Supabase isn’t configured yet."
+            : data?.detail || "Couldn’t create account.",
         );
         return;
       }
 
+      if (data.note) setNote(data.note);
+
       const supabase = getSupabaseClient();
-      const session = (data as { session?: { access_token: string; refresh_token: string } | null })
-        .session;
+      const session = data.session;
       if (supabase && session?.access_token && session?.refresh_token) {
         await supabase.auth.setSession({
           access_token: session.access_token,
           refresh_token: session.refresh_token,
         });
-
-        // If user has no org memberships, make sure we land on the "join/create org" prompt.
-        const { data: memberships } = await supabase
-          .from("organization_members")
-          .select("organization_id")
-          .limit(1);
-        if (!memberships || memberships.length === 0) {
-          setSelectedOrgId("");
-        }
       }
 
+      // new users start with no org selected
+      setSelectedOrgId("");
       router.replace("/admin/pages");
       router.refresh();
     } finally {
@@ -72,15 +68,19 @@ export default function AdminLoginPage() {
     <div className="min-h-[calc(100vh-96px)] flex items-center justify-center">
       <Card className="w-full max-w-md bg-white/80 backdrop-blur">
         <CardHeader>
-          <div className="text-lg font-semibold text-zinc-900 tracking-tight">
-            Admin Login
-          </div>
+          <div className="text-lg font-semibold text-zinc-900 tracking-tight">Create account</div>
           <div className="mt-1 text-sm text-zinc-500">
-            Sign in to access the admin portal
+            Sign up to access the admin portal.
           </div>
         </CardHeader>
         <CardContent>
           <form className="space-y-4" onSubmit={onSubmit}>
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-zinc-600" htmlFor="name">
+                Name
+              </label>
+              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
+            </div>
             <div className="space-y-2">
               <label className="text-xs font-medium text-zinc-600" htmlFor="email">
                 Email
@@ -95,39 +95,37 @@ export default function AdminLoginPage() {
             </div>
             <div className="space-y-2">
               <label className="text-xs font-medium text-zinc-600" htmlFor="password">
-                Admin password
+                Password
               </label>
               <Input
                 id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 type="password"
-                autoComplete="current-password"
+                autoComplete="new-password"
               />
             </div>
 
             {error ? (
-              <div
-                className="rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
-                role="alert"
-              >
+              <div className="rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
                 {error}
+              </div>
+            ) : null}
+            {note ? (
+              <div className="rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700">
+                {note}
               </div>
             ) : null}
 
             <Button variant="primary" className="w-full" type="submit" disabled={loading}>
-              {loading ? "Signing in…" : "Sign in"}
+              {loading ? "Creating…" : "Create account"}
             </Button>
-
-            <div className="text-xs text-zinc-500">
-              Use the same email + password you created in Supabase Auth.
-            </div>
           </form>
 
           <div className="mt-5 text-sm text-zinc-600">
-            Don’t have an account?{" "}
-            <Link className="font-medium text-zinc-900 hover:underline underline-offset-4" href="/admin/signup">
-              Create one
+            Already have an account?{" "}
+            <Link className="font-medium text-zinc-900 hover:underline underline-offset-4" href="/admin/login">
+              Sign in
             </Link>
           </div>
         </CardContent>
@@ -135,3 +133,4 @@ export default function AdminLoginPage() {
     </div>
   );
 }
+

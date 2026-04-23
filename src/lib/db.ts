@@ -1,5 +1,8 @@
 import type { PaymentPage, Transaction } from "@/lib/qpp-types";
 import { getSupabaseClient } from "@/lib/supabase";
+import { getSelectedOrgId } from "@/lib/org";
+import { fromPaymentPagesRow, toPaymentPagesRow } from "@/lib/paymentPagesDb";
+import { fromCustomFieldRow, toCustomFieldRow } from "@/lib/customFieldsDb";
 
 async function jsonOrThrow<T>(res: Response): Promise<T> {
   const json = (await res.json().catch(() => ({}))) as unknown;
@@ -19,42 +22,103 @@ function requireSupabase() {
   return client;
 }
 
-// Fetch one page with its custom fields by slug
+function requireOrgId() {
+  const orgId = getSelectedOrgId();
+  if (!orgId) throw new Error("Select or join an organization to continue.");
+  return orgId;
+}
+
+async function requireUserId(client: ReturnType<typeof requireSupabase>) {
+  const { data, error } = await client.auth.getUser();
+  if (error || !data.user?.id) throw new Error("Not signed in.");
+  return data.user.id;
+}
+
+// Fetch one page with its custom fields by slug (org-scoped)
 export async function getPageBySlug(slug: string): Promise<PaymentPage | null> {
-  const res = await fetch(`/api/admin/payment-pages/${encodeURIComponent(slug)}`, {
-    method: "GET",
-  });
-  if (res.status === 404) return null;
-  const json = await jsonOrThrow<{ page: PaymentPage | null }>(res);
-  return json.page ?? null;
+  const client = requireSupabase();
+  const orgId = requireOrgId();
+
+  const result = await client
+    .from("payment_pages")
+    .select("*")
+    .eq("slug", slug)
+    .eq("organization_id", orgId)
+    .maybeSingle();
+
+  if (result.error) throw result.error;
+  if (!result.data) return null;
+
+  const page = fromPaymentPagesRow(result.data);
+  if (!page) return null;
+
+  const fieldsResult = await client
+    .from("custom_fields")
+    .select("*")
+    .eq("page_id", result.data.id)
+    .order("display_order", { ascending: true });
+
+  if (fieldsResult.error) throw fieldsResult.error;
+  page.fields = (fieldsResult.data ?? [])
+    .map((r) => fromCustomFieldRow(r))
+    .filter((f): f is NonNullable<typeof f> => Boolean(f));
+
+  return page;
 }
 
-// Fetch all pages with their custom fields
+// Fetch all pages (org-scoped)
 export async function listPages(): Promise<PaymentPage[]> {
-  const res = await fetch("/api/admin/payment-pages", { method: "GET" });
-  const json = await jsonOrThrow<{ pages: PaymentPage[] }>(res);
-  return json.pages ?? [];
+  const client = requireSupabase();
+  const orgId = requireOrgId();
+
+  const result = await client
+    .from("payment_pages")
+    .select("*")
+    .eq("organization_id", orgId)
+    .order("updated_at", { ascending: false });
+
+  if (result.error) throw result.error;
+  return (result.data ?? [])
+    .map((r) => fromPaymentPagesRow(r))
+    .filter((p): p is NonNullable<typeof p> => Boolean(p));
 }
 
-// Upsert page, then delete+reinsert its custom fields
+// Upsert page (org-scoped), then delete+reinsert its custom fields
 export async function savePage(page: PaymentPage): Promise<void> {
-  // Try update first; if the page doesn't exist yet, fall back to create.
-  const put = await fetch(`/api/admin/payment-pages/${encodeURIComponent(page.slug)}`, {
-    method: "PUT",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ page }),
-  });
-  if (put.status !== 404) {
-    await jsonOrThrow<{ page: PaymentPage }>(put);
-    return;
-  }
+  const client = requireSupabase();
+  const orgId = requireOrgId();
+  const userId = await requireUserId(client);
 
-  const post = await fetch("/api/admin/payment-pages", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ page }),
-  });
-  await jsonOrThrow<{ page: PaymentPage }>(post);
+  // Upsert the page row.
+  const upsert = await client
+    .from("payment_pages")
+    .upsert(
+      {
+        organization_id: orgId,
+        admin_id: userId,
+        ...toPaymentPagesRow(page),
+      },
+      { onConflict: "slug" },
+    )
+    .select("id")
+    .eq("organization_id", orgId)
+    .eq("slug", page.slug)
+    .single();
+
+  if (upsert.error) throw upsert.error;
+  const pageId = upsert.data?.id;
+  if (!pageId) throw new Error("Failed to save page.");
+
+  // Replace fields.
+  const del = await client.from("custom_fields").delete().eq("page_id", pageId);
+  if (del.error) throw del.error;
+
+  if (page.fields?.length) {
+    const ins = await client
+      .from("custom_fields")
+      .insert(page.fields.map((f) => toCustomFieldRow(f, pageId)));
+    if (ins.error) throw ins.error;
+  }
 }
 
 // Fetch all transactions, join payment_pages to get slug
