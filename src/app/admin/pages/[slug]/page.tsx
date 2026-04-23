@@ -1397,6 +1397,12 @@ function QRCodePanel({ url, title }: { url: string; title: string }) {
 }
 
 function PaymentPreview({ page }: { page: PaymentPage }) {
+  const [logoBroken, setLogoBroken] = React.useState(false);
+
+  React.useEffect(() => {
+    setLogoBroken(false);
+  }, [page.logoUrl]);
+
   const amount =
     page.amountMode === "FIXED"
       ? fmtMoney(page.fixedAmountCents ?? 0)
@@ -1406,12 +1412,22 @@ function PaymentPreview({ page }: { page: PaymentPage }) {
 
   return (
     <div className="flex flex-col items-center">
-      <div className="h-14 w-14 rounded-full border border-zinc-200 bg-zinc-50 grid place-items-center">
-        <div
-          className="h-7 w-7 rounded-lg"
-          style={{ backgroundColor: page.brandColor }}
-          aria-hidden="true"
-        />
+      <div className="h-14 w-14 shrink-0 rounded-full border border-zinc-200 bg-white shadow-sm grid place-items-center overflow-hidden p-1.5">
+        {page.logoUrl && !logoBroken ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={page.logoUrl}
+            alt=""
+            className="h-full w-full object-contain"
+            onError={() => setLogoBroken(true)}
+          />
+        ) : (
+          <div
+            className="h-7 w-7 rounded-lg"
+            style={{ backgroundColor: page.brandColor }}
+            aria-hidden="true"
+          />
+        )}
       </div>
       <div className="mt-4 text-xl font-semibold text-zinc-900 text-center">{page.title}</div>
       <div className="mt-1 text-sm text-zinc-500 text-center">{page.subtitle}</div>
