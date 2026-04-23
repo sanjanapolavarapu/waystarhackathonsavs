@@ -7,11 +7,12 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { getSupabaseClient } from "@/lib/supabase";
 
 export default function AdminLoginPage() {
   const router = useRouter();
 
-  const [email, setEmail] = React.useState("admin@demo.com");
+  const [email, setEmail] = React.useState("owner@demo.com");
   const [password, setPassword] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(false);
@@ -26,12 +27,31 @@ export default function AdminLoginPage() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
-      const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
+      const data = (await res.json().catch(() => null)) as
+        | { ok?: boolean; error?: string; detail?: string }
+        | null;
       if (!res.ok || !data?.ok) {
-        setError("Invalid password.");
+        setError(
+          data?.error === "supabase_not_configured"
+            ? "Supabase isn’t configured yet. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to .env.local."
+            : data?.error === "supabase_auth_failed"
+              ? data.detail || "Supabase login failed."
+              : "Invalid email or password.",
+        );
         return;
       }
-      router.replace("/");
+
+      const supabase = getSupabaseClient();
+      const session = (data as { session?: { access_token: string; refresh_token: string } | null })
+        .session;
+      if (supabase && session?.access_token && session?.refresh_token) {
+        await supabase.auth.setSession({
+          access_token: session.access_token,
+          refresh_token: session.refresh_token,
+        });
+      }
+
+      router.replace("/admin/pages");
       router.refresh();
     } finally {
       setLoading(false);
@@ -90,8 +110,7 @@ export default function AdminLoginPage() {
             </Button>
 
             <div className="text-xs text-zinc-500">
-              Dev default password is <span className="font-mono">admin</span> (override with{" "}
-              <span className="font-mono">ADMIN_PASSWORD</span>).
+              Use the same email + password you created in Supabase Auth.
             </div>
           </form>
 

@@ -12,13 +12,13 @@ import {
   Settings2,
   ShieldCheck,
 } from "lucide-react";
-import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Segmented } from "@/components/ui/segmented";
-import { getSupabase } from "@/lib/supabase";
+import { TopTabsNav } from "@/components/top-tabs-nav";
+import { getSupabaseClient } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
 type CustomField = {
@@ -41,12 +41,6 @@ type StatItem = {
   value: string;
   delta: string;
   icon: React.ComponentType<{ className?: string }>;
-};
-
-type TransactionRow = {
-  amount?: number | string | null;
-  status?: string | null;
-  created_at?: string | null;
 };
 
 const DEFAULT_STATS: StatItem[] = [
@@ -86,14 +80,11 @@ export default function Home() {
     let isMounted = true;
 
     async function loadStats() {
-      const supabase = getSupabase();
+      const supabase = getSupabaseClient();
       if (!supabase) {
-        setStats([
-          { label: "Active Pages", value: "—", delta: "Missing Supabase env", icon: LayoutGrid },
-          { label: "Payments", value: "—", delta: "Missing Supabase env", icon: BarChart3 },
-          { label: "Revenue Collected", value: "—", delta: "Missing Supabase env", icon: Copy },
-          { label: "Avg. Payment", value: "—", delta: "Missing Supabase env", icon: Settings2 },
-        ]);
+        // Supabase isn't configured in env (common right after pulling from git).
+        // Keep the UI functional with defaults rather than crashing the build/runtime.
+        setStats(DEFAULT_STATS);
         return;
       }
 
@@ -140,7 +131,7 @@ export default function Home() {
       }
 
       const successStatuses = new Set(["success", "succeeded", "paid", "completed"]);
-      const monthlyRows = (monthlyTxResult.data ?? []) as unknown as TransactionRow[];
+      const monthlyRows = monthlyTxResult.data ?? [];
 
       const currentMonthRows = monthlyRows.filter((row) => {
         const createdAt = row.created_at ? new Date(row.created_at) : null;
@@ -169,8 +160,7 @@ export default function Home() {
         0,
       );
 
-      const allRows = (allSuccessTxResult.data ?? []) as unknown as TransactionRow[];
-      const allSuccessRows = allRows.filter((row) =>
+      const allSuccessRows = (allSuccessTxResult.data ?? []).filter((row) =>
         successStatuses.has((row.status ?? "").toLowerCase()),
       );
       const totalRevenue = allSuccessRows.reduce((sum, row) => sum + Number(row.amount ?? 0), 0);
@@ -231,7 +221,17 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#fbfbff] bg-[radial-gradient(1200px_600px_at_15%_20%,rgba(99,102,241,0.14),transparent_60%),radial-gradient(900px_500px_at_90%_10%,rgba(217,70,239,0.12),transparent_55%)]">
       <div className="mx-auto w-full max-w-[1240px] px-4 py-6 sm:px-6">
-        <TopNav />
+        <TopTabsNav
+          subtitle="Reusable payment links for any business"
+          actions={
+            <>
+              <Button variant="ghost" className="h-10 px-3 hover:bg-white/60">
+                Save Draft
+              </Button>
+              <Button variant="primary">Publish Page</Button>
+            </>
+          }
+        />
 
         <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-4">
           {stats.map((s) => (
@@ -434,13 +434,11 @@ export default function Home() {
                     title="QR Code"
                     subtitle="Print & scan"
                   />
-                  <Link href="/pay/test" className="block">
-                    <DistributionOption
-                      icon={<Eye className="h-4 w-4" />}
-                      title="Open Test Checkout"
-                      subtitle="Try a real payment flow"
-                    />
-                  </Link>
+                  <DistributionOption
+                    icon={<Eye className="h-4 w-4" />}
+                    title="Embed"
+                    subtitle="Website widget"
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -457,50 +455,6 @@ export default function Home() {
               />
             </PreviewShell>
           </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function TopNav() {
-  return (
-    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-      <div className="flex items-center gap-3">
-        <div className="h-10 w-10 rounded-2xl bg-white border border-zinc-200/80 shadow-sm grid place-items-center">
-          <div className="h-5 w-5 rounded-lg bg-indigo-600" />
-        </div>
-        <div>
-          <div className="text-sm font-semibold text-zinc-900 tracking-tight">
-            Quick Payment Pages
-          </div>
-          <div className="text-xs text-zinc-500">Reusable payment links for any business</div>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between gap-3 md:justify-end">
-        <div className="inline-flex items-center gap-1 rounded-2xl border border-zinc-200 bg-white/80 backdrop-blur p-1 shadow-sm">
-          <button
-            type="button"
-            className="inline-flex items-center gap-2 rounded-xl bg-zinc-50 px-3 py-2 text-sm font-medium text-zinc-900 shadow-sm"
-          >
-            <Settings2 className="h-4 w-4 text-zinc-600" />
-            Builder
-          </button>
-          <button
-            type="button"
-            className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50"
-          >
-            <BarChart3 className="h-4 w-4" />
-            Analytics
-          </button>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" className="h-10 px-3 hover:bg-white/60">
-            Save Draft
-          </Button>
-          <Button variant="primary">Publish Page</Button>
         </div>
       </div>
     </div>
