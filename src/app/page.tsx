@@ -172,27 +172,81 @@ export default function Home() {
       </section>
 
       <section className="mx-auto w-full max-w-[1240px] px-4 pb-20 sm:px-6">
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <div className="rounded-3xl border border-zinc-200 bg-white/80 backdrop-blur p-6 shadow-sm">
-            <div className="text-xs font-medium text-zinc-500">Step 1</div>
-            <div className="mt-2 text-base font-semibold text-zinc-900">Create a page</div>
-            <p className="mt-2 text-sm text-zinc-600">
-              Choose a title, amount type, and fields you need for reconciliation.
-            </p>
+        <div className="rounded-[36px] border border-zinc-200 bg-white/60 backdrop-blur p-6 shadow-sm sm:p-10">
+          <div className="flex items-center justify-between gap-6">
+            <div>
+              <div className="text-sm font-semibold text-zinc-900">How it works</div>
+              <div className="mt-1 text-sm text-zinc-600">
+                A clean flow from invoice to paid receipt—without engineering work.
+              </div>
+            </div>
+            <div className="hidden sm:flex items-center gap-2 text-xs text-zinc-500">
+              <span className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white/70 px-3 py-2">
+                Typical setup: <span className="font-semibold text-zinc-700">5 minutes</span>
+              </span>
+            </div>
           </div>
-          <div className="rounded-3xl border border-zinc-200 bg-white/80 backdrop-blur p-6 shadow-sm">
-            <div className="text-xs font-medium text-zinc-500">Step 2</div>
-            <div className="mt-2 text-base font-semibold text-zinc-900">Share the link</div>
-            <p className="mt-2 text-sm text-zinc-600">
-              Send a URL, embed it, or drop a QR on an invoice—works everywhere.
-            </p>
-          </div>
-          <div className="rounded-3xl border border-zinc-200 bg-white/80 backdrop-blur p-6 shadow-sm">
-            <div className="text-xs font-medium text-zinc-500">Step 3</div>
-            <div className="mt-2 text-base font-semibold text-zinc-900">Get paid</div>
-            <p className="mt-2 text-sm text-zinc-600">
-              Payments flow into your dashboard with the data you need.
-            </p>
+
+          <div className="relative mt-8">
+            <div className="pointer-events-none absolute left-6 right-6 top-8 hidden lg:block">
+              <div className="h-px w-full bg-gradient-to-r from-indigo-200 via-fuchsia-200 to-sky-200" />
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+              <div className="group relative overflow-hidden rounded-3xl border border-zinc-200 bg-white/80 p-6 shadow-sm transition hover:-translate-y-[1px] hover:shadow-md">
+                <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-indigo-500/10 blur-2xl" />
+                <div className="flex items-start justify-between gap-4">
+                  <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-indigo-200/60 bg-gradient-to-br from-indigo-600 to-fuchsia-600 text-white shadow-sm">
+                    <span className="text-sm font-semibold">1</span>
+                  </div>
+                  <div className="text-xs font-medium text-zinc-500">Create</div>
+                </div>
+                <div className="mt-4 text-base font-semibold text-zinc-900">Create a page</div>
+                <p className="mt-2 text-sm text-zinc-600">
+                  Choose a title, amount type, and fields you need for reconciliation.
+                </p>
+                <div className="mt-4 inline-flex items-center gap-2 text-xs font-medium text-indigo-700">
+                  <span className="h-1.5 w-1.5 rounded-full bg-indigo-500/70" />
+                  Branding, amounts, GL codes
+                </div>
+              </div>
+
+              <div className="group relative overflow-hidden rounded-3xl border border-zinc-200 bg-white/80 p-6 shadow-sm transition hover:-translate-y-[1px] hover:shadow-md">
+                <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-fuchsia-500/10 blur-2xl" />
+                <div className="flex items-start justify-between gap-4">
+                  <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-fuchsia-200/60 bg-gradient-to-br from-fuchsia-600 to-indigo-600 text-white shadow-sm">
+                    <span className="text-sm font-semibold">2</span>
+                  </div>
+                  <div className="text-xs font-medium text-zinc-500">Share</div>
+                </div>
+                <div className="mt-4 text-base font-semibold text-zinc-900">Share the link</div>
+                <p className="mt-2 text-sm text-zinc-600">
+                  Send a URL, embed it, or drop a QR on an invoice—works everywhere.
+                </p>
+                <div className="mt-4 inline-flex items-center gap-2 text-xs font-medium text-fuchsia-700">
+                  <span className="h-1.5 w-1.5 rounded-full bg-fuchsia-500/70" />
+                  Link, iframe, QR
+                </div>
+              </div>
+
+              <div className="group relative overflow-hidden rounded-3xl border border-zinc-200 bg-white/80 p-6 shadow-sm transition hover:-translate-y-[1px] hover:shadow-md">
+                <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-sky-500/10 blur-2xl" />
+                <div className="flex items-start justify-between gap-4">
+                  <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-sky-200/60 bg-gradient-to-br from-indigo-600 to-sky-500 text-white shadow-sm">
+                    <span className="text-sm font-semibold">3</span>
+                  </div>
+                  <div className="text-xs font-medium text-zinc-500">Paid</div>
+                </div>
+                <div className="mt-4 text-base font-semibold text-zinc-900">Get paid</div>
+                <p className="mt-2 text-sm text-zinc-600">
+                  Payments show up in your dashboard with the metadata you need.
+                </p>
+                <div className="mt-4 inline-flex items-center gap-2 text-xs font-medium text-sky-700">
+                  <span className="h-1.5 w-1.5 rounded-full bg-sky-500/70" />
+                  Reporting + receipts
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
