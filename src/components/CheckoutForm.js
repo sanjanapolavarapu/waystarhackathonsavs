@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
-export default function CheckoutForm() {
+export default function CheckoutForm({ returnUrl }) {
   const stripe = useStripe();
   const elements = useElements();
 
@@ -21,7 +21,7 @@ export default function CheckoutForm() {
       elements,
       confirmParams: {
         // Redirects here after successful payment
-        return_url: `${window.location.origin}/pay/success`,
+        return_url: returnUrl || `${window.location.origin}/pay/success`,
       },
     });
 

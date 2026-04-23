@@ -7,7 +7,7 @@ import CheckoutForm from './CheckoutForm';
 // Load Stripe outside of component render to avoid recreating the object
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
 
-export default function PaymentWrapper({ clientSecret }) {
+export default function PaymentWrapper({ clientSecret, returnUrl }) {
   const options = {
     clientSecret: clientSecret,
     appearance: {
@@ -17,7 +17,7 @@ export default function PaymentWrapper({ clientSecret }) {
 
   return (
     <Elements stripe={stripePromise} options={options}>
-      <CheckoutForm />
+      <CheckoutForm returnUrl={returnUrl} />
     </Elements>
   );
 }

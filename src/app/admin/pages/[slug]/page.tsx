@@ -25,9 +25,62 @@ import { cn } from "@/lib/utils";
 
 const BRAND_COLORS = ["#0EA5E9", "#06B6D4", "#10B981", "#3B82F6", "#8B5CF6", "#F97316"];
 
-export default function AdminPageEditor({ params }: { params: { slug: string } }) {
-  const initial = getPageBySlug(params.slug) ?? getPageBySlug("telehealth-consult");
-  const [page, setPage] = React.useState<PaymentPage>(() => structuredClone(initial!));
+export default function AdminPageEditor({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = React.use(params);
+  const pageRef = React.useRef<PaymentPage | null>(null);
+  const [page, setPage] = React.useState<PaymentPage>(() => {
+    const fallback = getPageBySlug(slug) ?? getPageBySlug("consulting-session");
+    return structuredClone(fallback!);
+  });
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [savedToast, setSavedToast] = React.useState<string | null>(null);
+  const [loadError, setLoadError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    pageRef.current = page;
+  }, [page]);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      queueMicrotask(() => {
+        if (cancelled) return;
+        setLoadError(null);
+        setIsLoading(true);
+      });
+      try {
+        const res = await fetch(`/api/admin/payment-pages/${encodeURIComponent(slug)}`);
+        const json = (await res.json()) as { page?: PaymentPage | null; error?: string };
+        if (!res.ok) throw new Error(json.error || "Failed to load page");
+        if (cancelled) return;
+        const next =
+          json.page ??
+          getPageBySlug(slug) ??
+          getPageBySlug("consulting-session") ??
+          pageRef.current;
+        queueMicrotask(() => {
+          if (cancelled) return;
+          setPage((prev) => structuredClone(next ?? pageRef.current ?? prev));
+          setIsLoading(false);
+        });
+      } catch (e) {
+        if (cancelled) return;
+        const msg = e instanceof Error ? e.message : "Failed to load page";
+        queueMicrotask(() => {
+          if (cancelled) return;
+          setLoadError(msg);
+          setIsLoading(false);
+        });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
 
   const amountModeUi: "fixed" | "range" | "custom" =
     page.amountMode === "FIXED"
@@ -46,8 +99,42 @@ export default function AdminPageEditor({ params }: { params: { slug: string } }
     }));
   }
 
+  async function save(kind: "draft" | "publish") {
+    const next = {
+      ...page,
+      updatedAt: new Date().toISOString(),
+      isActive: kind === "publish" ? true : page.isActive,
+    };
+    setPage(next);
+    try {
+      const res = await fetch(`/api/admin/payment-pages/${encodeURIComponent(slug)}`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ page: next }),
+      });
+      const json = (await res.json()) as { page?: PaymentPage | null; error?: string };
+      if (!res.ok) throw new Error(json.error || "Failed to save");
+      if (json.page) setPage(json.page);
+      setSavedToast(kind === "publish" ? "Published." : "Draft saved.");
+      window.setTimeout(() => setSavedToast(null), 2500);
+    } catch (e) {
+      setSavedToast(e instanceof Error ? e.message : "Failed to save");
+      window.setTimeout(() => setSavedToast(null), 3500);
+    }
+  }
+
   return (
     <div className="space-y-5">
+      {isLoading ? (
+        <div className="rounded-2xl border border-zinc-200 bg-white/70 px-4 py-3 text-sm text-zinc-700">
+          Loading…
+        </div>
+      ) : null}
+      {loadError ? (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          {loadError}
+        </div>
+      ) : null}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
@@ -64,12 +151,24 @@ export default function AdminPageEditor({ params }: { params: { slug: string } }
           <Link href="/admin/pages">
             <Button variant="secondary">Back</Button>
           </Link>
-          <Button variant="ghost" className="hover:bg-white/60">
+          <Button
+            variant="ghost"
+            className="hover:bg-white/60"
+            type="button"
+            onClick={() => save("draft")}
+          >
             Save draft
           </Button>
-          <Button variant="primary">Publish</Button>
+          <Button variant="primary" type="button" onClick={() => save("publish")}>
+            Publish
+          </Button>
         </div>
       </div>
+      {savedToast ? (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          {savedToast}
+        </div>
+      ) : null}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.05fr_0.95fr]">
         <div className="space-y-5">
@@ -242,7 +341,7 @@ export default function AdminPageEditor({ params }: { params: { slug: string } }
                         fields: [
                           ...p.fields,
                           {
-                            id: `field_${p.fields.length + 1}`,
+                            id: crypto.randomUUID(),
                             label: "New field",
                             type: "TEXT",
                             required: false,
@@ -517,13 +616,16 @@ function QRCodePanel({ url, title }: { url: string; title: string }) {
 
   React.useEffect(() => {
     let cancelled = false;
-    setError(null);
-    setPngDataUrl(null);
-    setSvg(null);
+    queueMicrotask(() => {
+      if (cancelled) return;
+      setError(null);
+      setPngDataUrl(null);
+      setSvg(null);
+      setDebug(null);
+    });
 
     void (async () => {
       try {
-        setDebug(null);
         const [png, svgString] = await Promise.all([
           QRCode.toDataURL(url, {
             margin: 2,
@@ -565,7 +667,6 @@ function QRCodePanel({ url, title }: { url: string; title: string }) {
       <div className="flex items-center gap-3">
         <div className="h-14 w-14 rounded-2xl border border-zinc-200 bg-zinc-50 grid place-items-center overflow-hidden">
           {pngDataUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
             <img src={pngDataUrl} alt={`QR code for ${url}`} className="h-full w-full" />
           ) : (
             <QrCode className="h-6 w-6 text-zinc-700" aria-hidden="true" />

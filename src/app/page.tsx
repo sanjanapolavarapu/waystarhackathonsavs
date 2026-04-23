@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import * as React from "react";
@@ -13,12 +12,13 @@ import {
   Settings2,
   ShieldCheck,
 } from "lucide-react";
+import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Segmented } from "@/components/ui/segmented";
-import { supabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
 type CustomField = {
@@ -41,6 +41,12 @@ type StatItem = {
   value: string;
   delta: string;
   icon: React.ComponentType<{ className?: string }>;
+};
+
+type TransactionRow = {
+  amount?: number | string | null;
+  status?: string | null;
+  created_at?: string | null;
 };
 
 const DEFAULT_STATS: StatItem[] = [
@@ -80,6 +86,17 @@ export default function Home() {
     let isMounted = true;
 
     async function loadStats() {
+      const supabase = getSupabase();
+      if (!supabase) {
+        setStats([
+          { label: "Active Pages", value: "—", delta: "Missing Supabase env", icon: LayoutGrid },
+          { label: "Payments", value: "—", delta: "Missing Supabase env", icon: BarChart3 },
+          { label: "Revenue Collected", value: "—", delta: "Missing Supabase env", icon: Copy },
+          { label: "Avg. Payment", value: "—", delta: "Missing Supabase env", icon: Settings2 },
+        ]);
+        return;
+      }
+
       const now = new Date();
       const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
       const previousMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
@@ -123,7 +140,7 @@ export default function Home() {
       }
 
       const successStatuses = new Set(["success", "succeeded", "paid", "completed"]);
-      const monthlyRows = monthlyTxResult.data ?? [];
+      const monthlyRows = (monthlyTxResult.data ?? []) as unknown as TransactionRow[];
 
       const currentMonthRows = monthlyRows.filter((row) => {
         const createdAt = row.created_at ? new Date(row.created_at) : null;
@@ -152,7 +169,8 @@ export default function Home() {
         0,
       );
 
-      const allSuccessRows = (allSuccessTxResult.data ?? []).filter((row) =>
+      const allRows = (allSuccessTxResult.data ?? []) as unknown as TransactionRow[];
+      const allSuccessRows = allRows.filter((row) =>
         successStatuses.has((row.status ?? "").toLowerCase()),
       );
       const totalRevenue = allSuccessRows.reduce((sum, row) => sum + Number(row.amount ?? 0), 0);
@@ -416,11 +434,13 @@ export default function Home() {
                     title="QR Code"
                     subtitle="Print & scan"
                   />
-                  <DistributionOption
-                    icon={<Eye className="h-4 w-4" />}
-                    title="Embed"
-                    subtitle="Website widget"
-                  />
+                  <Link href="/pay/test" className="block">
+                    <DistributionOption
+                      icon={<Eye className="h-4 w-4" />}
+                      title="Open Test Checkout"
+                      subtitle="Try a real payment flow"
+                    />
+                  </Link>
                 </div>
               </CardContent>
             </Card>
