@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 function requiredEnv(name: string) {
   const v = process.env[name];
@@ -6,7 +6,7 @@ function requiredEnv(name: string) {
   return v;
 }
 
-async function getOrCreateAdminUserId(supabase: ReturnType<typeof createClient>) {
+async function getOrCreateAdminUserId(supabase: SupabaseClient) {
   const explicitId = process.env.SUPABASE_DEFAULT_ADMIN_ID;
   if (explicitId) return explicitId;
 

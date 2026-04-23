@@ -41,6 +41,7 @@ export function TopTabsNav({
   const orgSelected = Boolean(getSelectedOrgId());
 
   const isAdminUi = pathname.startsWith("/admin");
+  const isOrgMgmt = pathname.startsWith("/admin/orgs");
 
   return (
     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -60,7 +61,11 @@ export function TopTabsNav({
         <div className="inline-flex items-center gap-1 rounded-2xl border border-zinc-200 bg-white/80 backdrop-blur p-1 shadow-sm">
           {TABS.map((tab) => {
             const active = tab.isActive(pathname);
-            const disabled = isAdminUi && tab.href === "/admin/reports" && !orgSelected;
+            const disabled =
+              isAdminUi &&
+              !isOrgMgmt &&
+              !orgSelected &&
+              (tab.href === "/admin/pages" || tab.href === "/admin/reports");
             if (disabled) {
               return (
                 <span
@@ -69,7 +74,7 @@ export function TopTabsNav({
                     "inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium",
                     "text-zinc-400 cursor-not-allowed",
                   )}
-                  title="Select or join an organization to view reports."
+                  title="Select or join an organization to continue."
                 >
                   {tab.icon}
                   {tab.label}

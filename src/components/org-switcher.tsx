@@ -141,6 +141,15 @@ export function OrgSwitcher({ className }: { className?: string }) {
             >
               Invite codes
             </Link>
+            {selectedId ? (
+              <Link
+                href="/admin/orgs/delete"
+                onClick={() => setOpen(false)}
+                className="mt-2 block rounded-xl border border-red-200 bg-white px-3 py-2 text-center text-sm font-medium text-red-700 hover:bg-red-50"
+              >
+                Delete organization…
+              </Link>
+            ) : null}
           </div>
         </div>
       ) : null}
