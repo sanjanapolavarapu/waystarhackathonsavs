@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 
 import { OrgSwitcher } from "@/components/org-switcher";
 import { TopTabsNav } from "@/components/top-tabs-nav";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export function AdminHeader() {
   const pathname = usePathname() ?? "";
@@ -18,7 +19,11 @@ export function AdminHeader() {
       actions={
         <>
           <OrgSwitcher />
-          <Link className="text-sm font-medium text-zinc-600 hover:text-zinc-900" href="/admin/logout">
+          <ThemeToggle className="h-10 w-10 px-0 rounded-lg border border-zinc-200 bg-white/60 backdrop-blur hover:bg-white dark:border-zinc-800 dark:bg-zinc-950/40 dark:hover:bg-zinc-950/60" />
+          <Link
+            className="text-sm font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"
+            href="/admin/logout"
+          >
             Logout
           </Link>
         </>

@@ -355,10 +355,11 @@ export default function ReportsUi() {
     <div className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <div className="text-xl font-semibold tracking-tight text-zinc-900">Reporting</div>
-          <div className="mt-1 text-sm text-zinc-500">
-            Demo analytics (static sample data). Not tied to organization or Supabase — filters still apply
-            to this preview.
+          <div className="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
+            Reporting
+          </div>
+          <div className="mt-1 text-sm text-zinc-500 dark:text-zinc-300">
+            Conversion, payment volume, and failure analytics.
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -371,27 +372,48 @@ export default function ReportsUi() {
         </div>
       </div>
 
+      {error ? (
+        <Card className="bg-white/80 backdrop-blur dark:bg-zinc-950/30">
+          <CardContent className="p-5 text-sm text-zinc-700 dark:text-zinc-300">
+            {error}
+          </CardContent>
+        </Card>
+      ) : null}
+      {visitsWarning ? (
+        <Card className="bg-amber-50 border-amber-200">
+          <CardContent className="p-4 text-sm text-amber-900">{visitsWarning}</CardContent>
+        </Card>
+      ) : null}
+
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Card className="bg-white/80 backdrop-blur lg:col-span-2">
+        <Card className="bg-white/80 backdrop-blur lg:col-span-2 dark:bg-zinc-950/30">
           <CardHeader>
-            <div className="text-sm font-semibold text-zinc-900">Conversion Funnel</div>
-            <div className="mt-1 text-sm text-zinc-500">
-              Sample funnel: visits, checkout starts, and successful payments (demo data).
+            <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+              Conversion Funnel
+            </div>
+            <div className="mt-1 text-sm text-zinc-500 dark:text-zinc-300">
+              Who visited, started checkout, and paid.
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="grid grid-cols-3 gap-3 text-center">
-              <div className="rounded-2xl border border-zinc-200 bg-white p-3">
-                <div className="text-xs text-zinc-500">Visited</div>
-                <div className="mt-1 text-2xl font-semibold text-zinc-900">{loading ? "—" : funnelVisited}</div>
+              <div className="rounded-2xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-950/40">
+                <div className="text-xs text-zinc-500 dark:text-zinc-400">Visited</div>
+                <div className="mt-1 text-2xl font-semibold text-zinc-900 dark:text-zinc-100">
+                  {loading ? "—" : funnelVisited}
+                </div>
               </div>
-              <div className="rounded-2xl border border-zinc-200 bg-white p-3">
-                <div className="text-xs text-zinc-500">Started checkout</div>
-                <div className="mt-1 text-2xl font-semibold text-zinc-900">{loading ? "—" : funnelStarted}</div>
+              <div className="rounded-2xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-950/40">
+                <div className="text-xs text-zinc-500 dark:text-zinc-400">Started form</div>
+                <div className="mt-1 text-2xl font-semibold text-zinc-900 dark:text-zinc-100">
+                  {loading ? "—" : funnelStarted}
+                </div>
               </div>
-              <div className="rounded-2xl border border-zinc-200 bg-white p-3">
-                <div className="text-xs text-zinc-500">Paid</div>
-                <div className="mt-1 text-2xl font-semibold text-zinc-900">{loading ? "—" : funnelPaid}</div>
+              <div className="rounded-2xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-950/40">
+                <div className="text-xs text-zinc-500 dark:text-zinc-400">Paid</div>
+                <div className="mt-1 text-2xl font-semibold text-zinc-900 dark:text-zinc-100">
+                  {loading ? "—" : funnelPaid}
+                </div>
               </div>
             </div>
             <div className="text-sm font-medium text-indigo-700">
@@ -399,16 +421,20 @@ export default function ReportsUi() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/80 backdrop-blur">
+        <Card className="bg-white/80 backdrop-blur dark:bg-zinc-950/30">
           <CardHeader>
-            <div className="text-sm font-semibold text-zinc-900">Failed Payment Rate</div>
-            <div className="mt-1 text-sm text-zinc-500">How many payment attempts failed.</div>
+            <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+              Failed Payment Rate
+            </div>
+            <div className="mt-1 text-sm text-zinc-500 dark:text-zinc-300">
+              How many payment attempts failed.
+            </div>
           </CardHeader>
           <CardContent className="space-y-2">
-            <div className="text-sm text-zinc-700">
+            <div className="text-sm text-zinc-700 dark:text-zinc-300">
               <span className="font-semibold">{loading ? "—" : successfulTx.length}</span> succeeded
             </div>
-            <div className="text-sm text-zinc-700">
+            <div className="text-sm text-zinc-700 dark:text-zinc-300">
               <span className="font-semibold">{loading ? "—" : failedTx.length}</span> failed
             </div>
             <div className="text-sm font-medium text-rose-700">
@@ -418,10 +444,14 @@ export default function ReportsUi() {
         </Card>
       </div>
 
-      <Card className="bg-white/80 backdrop-blur">
+      <Card className="bg-white/80 backdrop-blur dark:bg-zinc-950/30">
         <CardHeader>
-          <div className="text-sm font-semibold text-zinc-900">Daily Payment Volume (Sun-Sat)</div>
-          <div className="mt-1 text-sm text-zinc-500">Successful payments for the current week.</div>
+          <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+            Daily Payment Volume (Sun-Sat)
+          </div>
+          <div className="mt-1 text-sm text-zinc-500 dark:text-zinc-300">
+            Successful payments for the current week.
+          </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-7 gap-3 items-end h-48">
@@ -429,9 +459,9 @@ export default function ReportsUi() {
               const height = maxDayAmount > 0 ? Math.max(12, Math.round((d.amount / maxDayAmount) * 140)) : 12;
               return (
                 <div key={d.key} className="flex flex-col items-center gap-2">
-                  <div className="text-[11px] text-zinc-500">{fmtMoney(d.amount)}</div>
+                  <div className="text-[11px] text-zinc-500 dark:text-zinc-400">{fmtMoney(d.amount)}</div>
                   <div className="w-full rounded-t-xl bg-indigo-500/80" style={{ height }} />
-                  <div className="text-xs text-zinc-600">{d.label}</div>
+                  <div className="text-xs text-zinc-600 dark:text-zinc-300">{d.label}</div>
                 </div>
               );
             })}
@@ -440,28 +470,30 @@ export default function ReportsUi() {
       </Card>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Card className="bg-white/80 backdrop-blur">
+        <Card className="bg-white/80 backdrop-blur dark:bg-zinc-950/30">
           <CardContent className="p-5">
-            <div className="text-xs font-medium text-zinc-500">Total payments</div>
-            <div className="mt-2 text-2xl font-semibold tracking-tight text-zinc-900">
+            <div className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Total payments</div>
+            <div className="mt-2 text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
               {loading ? "—" : totalPayments}
             </div>
             <div className="mt-1 text-xs text-indigo-600">Success only</div>
           </CardContent>
         </Card>
-        <Card className="bg-white/80 backdrop-blur">
+        <Card className="bg-white/80 backdrop-blur dark:bg-zinc-950/30">
           <CardContent className="p-5">
-            <div className="text-xs font-medium text-zinc-500">Total amount collected</div>
-            <div className="mt-2 text-2xl font-semibold tracking-tight text-zinc-900">
+            <div className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+              Total amount collected
+            </div>
+            <div className="mt-2 text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
               {loading ? "—" : fmtMoney(totalAmount)}
             </div>
             <div className="mt-1 text-xs text-indigo-600">Across all pages</div>
           </CardContent>
         </Card>
-        <Card className="bg-white/80 backdrop-blur">
+        <Card className="bg-white/80 backdrop-blur dark:bg-zinc-950/30">
           <CardContent className="p-5">
-            <div className="text-xs font-medium text-zinc-500">Average payment</div>
-            <div className="mt-2 text-2xl font-semibold tracking-tight text-zinc-900">
+            <div className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Average payment</div>
+            <div className="mt-2 text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
               {loading ? "—" : fmtMoney(avg)}
             </div>
             <div className="mt-1 text-xs text-indigo-600">Success only</div>
@@ -469,15 +501,16 @@ export default function ReportsUi() {
         </Card>
       </div>
 
-      <Card className="bg-white/80 backdrop-blur">
+      <Card className="bg-white/80 backdrop-blur dark:bg-zinc-950/30">
         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <div className="text-sm font-semibold text-zinc-900">Transactions</div>
-            <div className="mt-1 text-sm text-zinc-500">
+            <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Transactions</div>
+            <div className="mt-1 text-sm text-zinc-500 dark:text-zinc-300">
               {filtersActive ? (
                 <>
-                  Showing <span className="font-medium text-zinc-700">{filteredTx.length}</span> of{" "}
-                  <span className="font-medium text-zinc-700">{tx.length}</span> rows. Date uses{" "}
+                  Showing{" "}
+                  <span className="font-medium text-zinc-700 dark:text-zinc-200">{filteredTx.length}</span> of{" "}
+                  <span className="font-medium text-zinc-700 dark:text-zinc-200">{tx.length}</span> rows. Date uses{" "}
                   <span className="font-mono text-xs">YYYY-MM-DD</span> or{" "}
                   <span className="font-mono text-xs">start..end</span> (inclusive).
                 </>
@@ -516,8 +549,8 @@ export default function ReportsUi() {
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-sm">
-              <thead className="border-t border-zinc-200 bg-zinc-50/70">
-                <tr className="text-xs font-medium text-zinc-600">
+              <thead className="border-t border-zinc-200 bg-zinc-50/70 dark:border-zinc-800 dark:bg-zinc-900/30">
+                <tr className="text-xs font-medium text-zinc-600 dark:text-zinc-300">
                   <th className="px-5 py-3">Transaction</th>
                   <th className="px-5 py-3">Page</th>
                   <th className="px-5 py-3">Status</th>
@@ -526,10 +559,10 @@ export default function ReportsUi() {
                   <th className="px-5 py-3 text-right">Amount</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-200">
+              <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
                 {!loading && filteredTx.length === 0 ? (
                   <tr>
-                    <td className="px-5 py-10 text-center text-sm text-zinc-500" colSpan={6}>
+                    <td className="px-5 py-10 text-center text-sm text-zinc-500 dark:text-zinc-400" colSpan={6}>
                       {tx.length === 0
                         ? "No transactions loaded yet."
                         : "No transactions match these filters."}
@@ -537,14 +570,14 @@ export default function ReportsUi() {
                   </tr>
                 ) : null}
                 {filteredTx.map((t) => (
-                  <tr key={t.id} className="bg-white/60">
+                  <tr key={t.id} className="bg-white/60 dark:bg-zinc-950/20">
                     <td className="px-5 py-4">
-                      <div className="font-mono text-xs text-zinc-700">{t.id}</div>
-                      <div className="text-xs text-zinc-500">
+                      <div className="font-mono text-xs text-zinc-700 dark:text-zinc-300">{t.id}</div>
+                      <div className="text-xs text-zinc-500 dark:text-zinc-400">
                         {t.created_at ? new Date(t.created_at).toLocaleString() : "—"}
                       </div>
                     </td>
-                    <td className="px-5 py-4 text-zinc-800">
+                    <td className="px-5 py-4 text-zinc-800 dark:text-zinc-200">
                       <div className="font-medium">{t.page_slug ?? "—"}</div>
                     </td>
                     <td className="px-5 py-4">
@@ -556,9 +589,9 @@ export default function ReportsUi() {
                         <Badge variant="warning">Pending</Badge>
                       )}
                     </td>
-                    <td className="px-5 py-4 text-zinc-700">{t.payment_method ?? "—"}</td>
-                    <td className="px-5 py-4 text-zinc-700">{t.gl_code ?? "—"}</td>
-                    <td className="px-5 py-4 text-right font-semibold text-zinc-900">
+                    <td className="px-5 py-4 text-zinc-700 dark:text-zinc-300">{t.payment_method ?? "—"}</td>
+                    <td className="px-5 py-4 text-zinc-700 dark:text-zinc-300">{t.gl_code ?? "—"}</td>
+                    <td className="px-5 py-4 text-right font-semibold text-zinc-900 dark:text-zinc-100">
                       {fmtMoney(
                         typeof t.amount === "number"
                           ? t.amount
@@ -575,18 +608,18 @@ export default function ReportsUi() {
         </CardContent>
       </Card>
 
-      <Card className="bg-white/80 backdrop-blur">
+      <Card className="bg-white/80 backdrop-blur dark:bg-zinc-950/30">
         <CardHeader>
-          <div className="text-sm font-semibold text-zinc-900">Breakdowns</div>
-          <div className="mt-1 text-sm text-zinc-500">
+          <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Breakdowns</div>
+          <div className="mt-1 text-sm text-zinc-500 dark:text-zinc-300">
             Successful volume by GL code and attempt counts by payment method (uses the same filters as
             above).
           </div>
         </CardHeader>
         <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div className="rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm">
-            <div className="text-xs font-medium text-zinc-600">By GL code</div>
-            <div className="mt-3 space-y-2 text-sm text-zinc-700">
+          <div className="rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/40">
+            <div className="text-xs font-medium text-zinc-600 dark:text-zinc-300">By GL code</div>
+            <div className="mt-3 space-y-2 text-sm text-zinc-700 dark:text-zinc-300">
               {Array.from(
                 filteredTx.reduce((m, t) => {
                   const k = t.gl_code ?? "—";
@@ -608,9 +641,9 @@ export default function ReportsUi() {
               ))}
             </div>
           </div>
-          <div className="rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm">
-            <div className="text-xs font-medium text-zinc-600">By payment method</div>
-            <div className="mt-3 space-y-2 text-sm text-zinc-700">
+          <div className="rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/40">
+            <div className="text-xs font-medium text-zinc-600 dark:text-zinc-300">By payment method</div>
+            <div className="mt-3 space-y-2 text-sm text-zinc-700 dark:text-zinc-300">
               {Array.from(
                 filteredTx.reduce((m, t) => {
                   const k = t.payment_method ?? "unknown";

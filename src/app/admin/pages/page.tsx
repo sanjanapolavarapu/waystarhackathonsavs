@@ -44,10 +44,10 @@ export default function AdminPagesList() {
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <div className="text-xl font-semibold tracking-tight text-zinc-900">
+          <div className="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
             Payment Pages
           </div>
-          <div className="mt-1 text-sm text-zinc-500">
+          <div className="mt-1 text-sm text-zinc-500 dark:text-zinc-300">
             Create, configure, and share Quick Payment Pages.
           </div>
         </div>
@@ -62,24 +62,24 @@ export default function AdminPagesList() {
         </div>
       </div>
 
-      <Card className="bg-white/80 backdrop-blur">
+      <Card className="bg-white/80 backdrop-blur dark:bg-zinc-950/30">
         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="text-sm font-semibold text-zinc-900">All pages</div>
+          <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">All pages</div>
           <div className="relative w-full sm:w-[340px]">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400 dark:text-zinc-500" />
             <Input placeholder="Search pages…" className="pl-10" />
           </div>
         </CardHeader>
         <CardContent className="p-0">
           {error ? (
-            <div className="px-5 py-4 text-sm text-red-700 bg-red-50 border-t border-red-200">
+            <div className="px-5 py-4 text-sm text-red-700 bg-red-50 border-t border-red-200 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200">
               Couldn’t load pages from Supabase: {error}
             </div>
           ) : null}
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-sm">
-              <thead className="border-t border-zinc-200 bg-zinc-50/70">
-                <tr className="text-xs font-medium text-zinc-600">
+              <thead className="border-t border-zinc-200 bg-zinc-50/70 dark:border-zinc-800 dark:bg-zinc-900/30">
+                <tr className="text-xs font-medium text-zinc-600 dark:text-zinc-300">
                   <th className="px-5 py-3">Page</th>
                   <th className="px-5 py-3">Slug</th>
                   <th className="px-5 py-3">Status</th>
@@ -87,33 +87,35 @@ export default function AdminPagesList() {
                   <th className="px-5 py-3 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-200">
+              <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
                 {loading ? (
-                  <tr className="bg-white/60">
-                    <td className="px-5 py-6 text-zinc-600" colSpan={5}>
+                  <tr className="bg-white/60 dark:bg-zinc-950/20">
+                    <td className="px-5 py-6 text-zinc-600 dark:text-zinc-300" colSpan={5}>
                       Loading...
                     </td>
                   </tr>
                 ) : null}
                 {pages.map((p) => (
-                  <tr key={p.id} className="bg-white/60">
+                  <tr key={p.id} className="bg-white/60 dark:bg-zinc-950/20">
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
                         <div
-                          className="h-9 w-9 rounded-2xl border border-zinc-200 bg-white shadow-sm"
+                          className="h-9 w-9 rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950/40"
                           style={{
                             boxShadow: `0 0 0 3px ${(p.brandColor ?? "#6366f1")}22`,
                           }}
                           aria-hidden="true"
                         />
                         <div>
-                          <div className="font-semibold text-zinc-900">{p.title || "Untitled"}</div>
-                          <div className="text-xs text-zinc-500">{p.subtitle || ""}</div>
+                          <div className="font-semibold text-zinc-900 dark:text-zinc-100">
+                            {p.title || "Untitled"}
+                          </div>
+                          <div className="text-xs text-zinc-500 dark:text-zinc-400">{p.subtitle || ""}</div>
                         </div>
                       </div>
                     </td>
                     <td className="px-5 py-4">
-                      <span className="font-mono text-xs text-zinc-700">
+                      <span className="font-mono text-xs text-zinc-700 dark:text-zinc-300">
                         /pay/{p.slug}
                       </span>
                     </td>
@@ -124,7 +126,7 @@ export default function AdminPagesList() {
                         <Badge variant="warning">Disabled</Badge>
                       )}
                     </td>
-                    <td className="px-5 py-4 text-zinc-600">
+                    <td className="px-5 py-4 text-zinc-600 dark:text-zinc-300">
                       {p.updatedAt ? new Date(p.updatedAt).toLocaleDateString() : "—"}
                     </td>
                     <td className="px-5 py-4">
@@ -149,7 +151,9 @@ export default function AdminPagesList() {
         </CardContent>
       </Card>
 
-      <div className="text-xs text-zinc-500">Showing pages from your configured data source.</div>
+      <div className="text-xs text-zinc-500 dark:text-zinc-400">
+        Showing pages from your configured data source.
+      </div>
     </div>
   );
 }
