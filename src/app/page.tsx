@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Segmented } from "@/components/ui/segmented";
+import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
 type CustomField = {
@@ -35,22 +36,28 @@ const BRAND_COLORS = [
   "#F97316",
 ];
 
-const STATS = [
-  { label: "Active Pages", value: "24", delta: "+5 this week", icon: LayoutGrid },
-  {
-    label: "Payments",
-    value: "2,847",
-    delta: "+22% from last month",
-    icon: BarChart3,
-  },
-  {
-    label: "Revenue Collected",
-    value: "$184,320",
-    delta: "+28% from last month",
-    icon: Copy,
-  },
-  { label: "Avg. Payment", value: "$64.75", delta: "Across all pages", icon: Settings2 },
+type StatItem = {
+  label: string;
+  value: string;
+  delta: string;
+  icon: React.ComponentType<{ className?: string }>;
+};
+
+const DEFAULT_STATS: StatItem[] = [
+  { label: "Active Pages", value: "0", delta: "+0 this week", icon: LayoutGrid },
+  { label: "Payments", value: "0", delta: "No data yet", icon: BarChart3 },
+  { label: "Revenue Collected", value: "$0.00", delta: "No data yet", icon: Copy },
+  { label: "Avg. Payment", value: "$0.00", delta: "Across all pages", icon: Settings2 },
 ];
+
+function formatPercentChange(current: number, previous: number) {
+  if (previous === 0 && current === 0) return "No change from last month";
+  if (previous === 0 && current > 0) return "New this month";
+  const pct = ((current - previous) / previous) * 100;
+  const rounded = Math.round(Math.abs(pct));
+  const sign = pct >= 0 ? "+" : "-";
+  return `${sign}${rounded}% from last month`;
+}
 
 export default function Home() {
   const [brandColor, setBrandColor] = React.useState(BRAND_COLORS[0]);
@@ -67,6 +74,130 @@ export default function Home() {
     { id: "serviceDate", label: "Service Date", type: "Date" },
     { id: "reference", label: "Reference ID", type: "Text" },
   ]);
+  const [stats, setStats] = React.useState<StatItem[]>(DEFAULT_STATS);
+
+  React.useEffect(() => {
+    let isMounted = true;
+
+    async function loadStats() {
+      const now = new Date();
+      const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const previousMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const weekStart = new Date(now);
+      weekStart.setDate(now.getDate() - 7);
+
+      const [activePagesResult, newPagesThisWeekResult, monthlyTxResult, allSuccessTxResult] =
+        await Promise.all([
+          supabase
+            .from("payment_pages")
+            .select("id", { count: "exact", head: true })
+            .eq("is_active", true),
+          supabase
+            .from("payment_pages")
+            .select("id", { count: "exact", head: true })
+            .gte("created_at", weekStart.toISOString()),
+          supabase
+            .from("transactions")
+            .select("amount, status, created_at")
+            .gte("created_at", previousMonthStart.toISOString()),
+          supabase
+            .from("transactions")
+            .select("amount, status"),
+        ]);
+
+      if (!isMounted) return;
+
+      if (
+        activePagesResult.error ||
+        newPagesThisWeekResult.error ||
+        monthlyTxResult.error ||
+        allSuccessTxResult.error
+      ) {
+        setStats([
+          { label: "Active Pages", value: "—", delta: "Unable to load", icon: LayoutGrid },
+          { label: "Payments", value: "—", delta: "Unable to load", icon: BarChart3 },
+          { label: "Revenue Collected", value: "—", delta: "Unable to load", icon: Copy },
+          { label: "Avg. Payment", value: "—", delta: "Unable to load", icon: Settings2 },
+        ]);
+        return;
+      }
+
+      const successStatuses = new Set(["success", "succeeded", "paid", "completed"]);
+      const monthlyRows = monthlyTxResult.data ?? [];
+
+      const currentMonthRows = monthlyRows.filter((row) => {
+        const createdAt = row.created_at ? new Date(row.created_at) : null;
+        return (
+          createdAt &&
+          createdAt >= currentMonthStart &&
+          successStatuses.has((row.status ?? "").toLowerCase())
+        );
+      });
+
+      const previousMonthRows = monthlyRows.filter((row) => {
+        const createdAt = row.created_at ? new Date(row.created_at) : null;
+        return (
+          createdAt &&
+          createdAt >= previousMonthStart &&
+          createdAt < currentMonthStart &&
+          successStatuses.has((row.status ?? "").toLowerCase())
+        );
+      });
+
+      const currentPayments = currentMonthRows.length;
+      const previousPayments = previousMonthRows.length;
+      const currentRevenue = currentMonthRows.reduce((sum, row) => sum + Number(row.amount ?? 0), 0);
+      const previousRevenue = previousMonthRows.reduce(
+        (sum, row) => sum + Number(row.amount ?? 0),
+        0,
+      );
+
+      const allSuccessRows = (allSuccessTxResult.data ?? []).filter((row) =>
+        successStatuses.has((row.status ?? "").toLowerCase()),
+      );
+      const totalRevenue = allSuccessRows.reduce((sum, row) => sum + Number(row.amount ?? 0), 0);
+      const avgPayment = allSuccessRows.length > 0 ? totalRevenue / allSuccessRows.length : 0;
+
+      setStats([
+        {
+          label: "Active Pages",
+          value: (activePagesResult.count ?? 0).toLocaleString(),
+          delta: `+${(newPagesThisWeekResult.count ?? 0).toLocaleString()} this week`,
+          icon: LayoutGrid,
+        },
+        {
+          label: "Payments",
+          value: currentPayments.toLocaleString(),
+          delta: formatPercentChange(currentPayments, previousPayments),
+          icon: BarChart3,
+        },
+        {
+          label: "Revenue Collected",
+          value: currentRevenue.toLocaleString(undefined, {
+            style: "currency",
+            currency: "USD",
+          }),
+          delta: formatPercentChange(currentRevenue, previousRevenue),
+          icon: Copy,
+        },
+        {
+          label: "Avg. Payment",
+          value: avgPayment.toLocaleString(undefined, {
+            style: "currency",
+            currency: "USD",
+          }),
+          delta: "Across all pages",
+          icon: Settings2,
+        },
+      ]);
+    }
+
+    void loadStats();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   function addField() {
     setCustomFields((prev) => [
@@ -85,7 +216,7 @@ export default function Home() {
         <TopNav />
 
         <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-4">
-          {STATS.map((s) => (
+          {stats.map((s) => (
             <StatCard key={s.label} {...s} />
           ))}
         </div>
