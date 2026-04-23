@@ -3,8 +3,6 @@
 import * as React from "react";
 import { Download } from "lucide-react";
 
-import { OrgSwitcher } from "@/components/org-switcher";
-import { getSelectedOrgId } from "@/lib/org";
 import { getSupabaseClient } from "@/lib/supabase";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -70,7 +68,6 @@ export default function ReportsUi() {
   React.useEffect(() => {
     let mounted = true;
     const supabase = getSupabaseClient();
-    const orgId = getSelectedOrgId();
 
     if (!supabase) {
       setError("Supabase isn’t configured.");
@@ -81,18 +78,10 @@ export default function ReportsUi() {
     void (async () => {
       setLoading(true);
       setError(null);
-      const baseTxQuery = supabase
+      const { data, error } = await supabase
         .from("transactions")
         .select("id, page_slug, created_at, status, payment_method, amount, amount_cents, payer_email, gl_code")
         .order("created_at", { ascending: false });
-      const scopedTxQuery = orgId ? baseTxQuery.eq("organization_id", orgId) : baseTxQuery;
-      let { data, error } = await scopedTxQuery;
-      // Fallback for schemas without organization_id.
-      if (error && orgId && error.message.toLowerCase().includes("organization_id")) {
-        const retry = await baseTxQuery;
-        data = retry.data;
-        error = retry.error;
-      }
 
       if (!mounted) return;
       if (error) {
@@ -103,15 +92,10 @@ export default function ReportsUi() {
       }
       setTx((data as typeof tx) ?? []);
 
-      const baseVisitsQuery = supabase
+      const visitsRes = await supabase
         .from("page_visits")
         .select("id, page_slug, visited_at")
         .order("visited_at", { ascending: false });
-      const scopedVisitsQuery = orgId ? baseVisitsQuery.eq("organization_id", orgId) : baseVisitsQuery;
-      let visitsRes = await scopedVisitsQuery;
-      if (visitsRes.error && orgId && visitsRes.error.message.toLowerCase().includes("organization_id")) {
-        visitsRes = await baseVisitsQuery;
-      }
       if (visitsRes.error) {
         setVisits([]);
         setVisitsWarning(
@@ -207,7 +191,6 @@ export default function ReportsUi() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <OrgSwitcher />
           <a href={downloadHref} download="transactions.csv">
           <Button variant="secondary">
             <Download className="h-4 w-4" />
