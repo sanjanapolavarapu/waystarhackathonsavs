@@ -124,10 +124,12 @@ export default function AdminLoginPage() {
             </div>
           </form>
 
-          <div className="mt-5 text-sm text-zinc-600">
-            Don’t have an account?{" "}
-            <Link className="font-medium text-zinc-900 hover:underline underline-offset-4" href="/admin/signup">
-              Create one
+          <div className="mt-6 space-y-3">
+            <div className="text-sm text-zinc-600">Don’t have an account?</div>
+            <Link href="/admin/signup" className="block">
+              <Button className="w-full" variant="secondary" type="button">
+                Create one
+              </Button>
             </Link>
           </div>
         </CardContent>
