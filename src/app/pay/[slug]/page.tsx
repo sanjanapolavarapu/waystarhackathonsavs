@@ -1,5 +1,7 @@
 import { PublicPayClient } from "./PublicPayClient";
 
+/** Public pay UI (client) records `page_visits` with device + `form_started` for analytics. */
+
 export default async function PublicPayPage({
   params,
 }: {

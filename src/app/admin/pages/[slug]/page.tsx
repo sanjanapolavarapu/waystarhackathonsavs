@@ -14,6 +14,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
+import { getPageInsights, type PageInsightsMetrics } from "@/lib/analytics";
 import { getPageBySlug, savePage } from "@/lib/db";
 import { validateGlCodes } from "@/lib/gl-code";
 import type { CustomField, CustomFieldType, PaymentPage } from "@/lib/qpp-types";
@@ -65,6 +66,9 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
   const [saving, setSaving] = React.useState(false);
   const [saveSuccess, setSaveSuccess] = React.useState<string | null>(null);
   const [saveError, setSaveError] = React.useState<string | null>(null);
+  const [dismissedInsights, setDismissedInsights] = React.useState<Set<string>>(() => new Set());
+  const [pageInsights, setPageInsights] = React.useState<PageInsightsMetrics | null>(null);
+  const [insightsLoading, setInsightsLoading] = React.useState(false);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -97,6 +101,27 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
       cancelled = true;
     };
   }, [slug]);
+
+  React.useEffect(() => {
+    if (!page.id) return;
+    let cancelled = false;
+    setPageInsights(null);
+    setInsightsLoading(true);
+    void (async () => {
+      try {
+        const data = await getPageInsights(page.id);
+        if (!cancelled) setPageInsights(data);
+      } catch {
+        if (!cancelled) setPageInsights(null);
+      } finally {
+        if (!cancelled) setInsightsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [page.id]);
+
   const glValidation = validateGlCodes(page.glCodes);
 
   const amountModeUi: "fixed" | "range" | "custom" =
@@ -274,6 +299,51 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
                     />
                     <div className="text-sm font-mono text-zinc-700">{page.brandColor}</div>
                   </div>
+
+                  <div className="mt-4 space-y-2">
+                    <label htmlFor="page-logo-url" className="text-xs font-medium text-zinc-600">
+                      Logo URL
+                    </label>
+                    <Input
+                      id="page-logo-url"
+                      value={page.logoUrl ?? ""}
+                      onChange={(e) =>
+                        setPage((p) => ({
+                          ...p,
+                          logoUrl: e.target.value.trim() ? e.target.value : undefined,
+                        }))
+                      }
+                      placeholder="https://example.com/logo.png"
+                    />
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="text-xs text-zinc-500">PNG, JPG, or SVG URL</div>
+                      {page.logoUrl ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setPage((p) => ({ ...p, logoUrl: undefined }))}
+                          aria-label="Remove logo URL"
+                        >
+                          Remove logo
+                        </Button>
+                      ) : null}
+                    </div>
+
+                    {page.logoUrl ? (
+                      <div className="rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm">
+                        <div className="text-xs font-medium text-zinc-600">Logo preview</div>
+                        <div className="mt-2 h-12 w-12 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={page.logoUrl}
+                            alt="Payment page logo preview"
+                            className="h-full w-full object-contain"
+                          />
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
               </Section>
 
@@ -294,12 +364,14 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
                   </Field>
                   <Field label="Subtitle / description">
                     <Input
+                      id="page-insights-subtitle"
                       value={page.subtitle ?? ""}
                       onChange={(e) => setPage((p) => ({ ...p, subtitle: e.target.value }))}
                     />
                   </Field>
                   <Field label="Custom header message">
                     <Input
+                      id="page-insights-header-message"
                       value={page.headerMessage ?? ""}
                       onChange={(e) => setPage((p) => ({ ...p, headerMessage: e.target.value }))}
                       placeholder="Optional"
@@ -621,6 +693,21 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
                   </div>
                 </div>
               </Section>
+
+              <PageInsightsSection
+                page={page}
+                insights={pageInsights}
+                insightsLoading={insightsLoading}
+                dismissed={dismissedInsights}
+                onDismiss={(id) =>
+                  setDismissedInsights((prev) => {
+                    const next = new Set(prev);
+                    next.add(id);
+                    return next;
+                  })
+                }
+                setPage={setPage}
+              />
             </CardContent>
           </Card>
 
@@ -688,6 +775,438 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
                 Open public page
               </Button>
             </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const INSIGHT_IDS = {
+  highDropoff: "data-high-dropoff",
+  mobileConversion: "data-mobile-conversion",
+  highFailure: "data-high-failure",
+  peakDay: "data-peak-day",
+  noPaymentsYet: "data-no-payments-yet",
+  noLogo: "form-no-logo",
+  noFields: "form-no-fields",
+  unlabeledFields: "form-unlabeled",
+  emptyDropdown: "form-dropdown-options",
+  fieldLimit: "form-field-limit",
+  noSubtitle: "form-no-subtitle",
+} as const;
+
+function newFieldId() {
+  return `field_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+}
+
+function defaultNameAndReferenceFields(): CustomField[] {
+  return [
+    {
+      id: newFieldId(),
+      label: "Full name",
+      type: "TEXT",
+      required: true,
+      placeholder: "Jane Doe",
+      helperText: "",
+      options: [],
+      order: 0,
+    },
+    {
+      id: newFieldId(),
+      label: "Reference / invoice #",
+      type: "TEXT",
+      required: false,
+      placeholder: "Optional",
+      helperText: "",
+      options: [],
+      order: 1,
+    },
+  ];
+}
+
+function reorderCheckboxDropdownLast(fields: CustomField[]): CustomField[] {
+  const sorted = fields.slice().sort((a, b) => a.order - b.order);
+  const tailTypes = new Set<CustomFieldType>(["CHECKBOX", "DROPDOWN"]);
+  const head = sorted.filter((f) => !tailTypes.has(f.type));
+  const tail = sorted.filter((f) => tailTypes.has(f.type));
+  return normalizeFieldOrder([...head, ...tail]);
+}
+
+type InsightCandidate = {
+  id: string;
+  kind: "warning" | "info";
+  title: string;
+  message: string;
+  apply?: () => void;
+};
+
+function PageInsightsSection({
+  page,
+  insights,
+  insightsLoading,
+  dismissed,
+  onDismiss,
+  setPage,
+}: {
+  page: PaymentPage;
+  insights: PageInsightsMetrics | null;
+  insightsLoading: boolean;
+  dismissed: Set<string>;
+  onDismiss: (id: string) => void;
+  setPage: React.Dispatch<React.SetStateAction<PaymentPage>>;
+}) {
+  const fieldCount = page.fields.length;
+  const hasBlankLabels = page.fields.some((f) => !String(f.label ?? "").trim());
+  const hasEmptyDropdown = page.fields.some(
+    (f) => f.type === "DROPDOWN" && (f.options?.length ?? 0) === 0,
+  );
+  const atFieldCap = fieldCount >= MAX_CUSTOM_FIELDS;
+  const hasRemovableOptionalField = page.fields.some((f) => !f.required);
+
+  const analyticsCandidates: InsightCandidate[] = [];
+
+  if (insights && !insightsLoading) {
+    const cr = Math.round(insights.conversionRate * 10) / 10;
+    const mr = Math.round(insights.mobileRate * 10) / 10;
+    const fr = Math.round(insights.failureRate * 10) / 10;
+
+    if (
+      insights.conversionRate < 40 &&
+      fieldCount > 5 &&
+      !dismissed.has(INSIGHT_IDS.highDropoff)
+    ) {
+      analyticsCandidates.push({
+        id: INSIGHT_IDS.highDropoff,
+        kind: "warning",
+        title: "High drop-off detected",
+        message: `Only ${cr}% of visitors complete payment. You have ${fieldCount} fields — pages with 5 or fewer convert 40% better.`,
+        apply: () => {
+          setPage((p) => {
+            const ordered = p.fields.slice().sort((a, b) => a.order - b.order);
+            const nextFields = ordered.map((field, index) =>
+              index > 4 && field.required ? { ...field, required: false } : field,
+            );
+            return { ...p, fields: normalizeFieldOrder(nextFields) };
+          });
+        },
+      });
+    }
+
+    if (
+      insights.mobileRate > 50 &&
+      insights.conversionRate < 40 &&
+      !dismissed.has(INSIGHT_IDS.mobileConversion)
+    ) {
+      analyticsCandidates.push({
+        id: INSIGHT_IDS.mobileConversion,
+        kind: "warning",
+        title: "Mobile visitors aren't converting",
+        message: `${mr}% of your visitors are on mobile but conversion is low. Simplify your form for mobile users.`,
+        apply: () => {
+          setPage((p) => ({ ...p, fields: reorderCheckboxDropdownLast(p.fields) }));
+        },
+      });
+    }
+
+    if (insights.failureRate > 15 && !dismissed.has(INSIGHT_IDS.highFailure)) {
+      const helper = "Double-check your billing ZIP matches your card statement";
+      analyticsCandidates.push({
+        id: INSIGHT_IDS.highFailure,
+        kind: "warning",
+        title: "High payment failure rate",
+        message: `${fr}% of payment attempts are failing — 3x the normal rate. Adding helper text to your card fields can reduce confusion.`,
+        apply: () => {
+          setPage((p) => {
+            const ordered = p.fields.slice().sort((a, b) => a.order - b.order);
+            const lower = (s: string) => s.toLowerCase();
+            let touched = false;
+            const next = ordered.map((f) => {
+              const lab = lower(f.label ?? "");
+              if (lab.includes("zip") || lab.includes("billing")) {
+                touched = true;
+                return { ...f, helperText: helper };
+              }
+              return f;
+            });
+            if (touched) return { ...p, fields: normalizeFieldOrder(next) };
+            const id = newFieldId();
+            return {
+              ...p,
+              fields: normalizeFieldOrder([
+                ...ordered,
+                {
+                  id,
+                  label: "Billing ZIP",
+                  type: "TEXT" as CustomFieldType,
+                  required: false,
+                  placeholder: "",
+                  helperText: helper,
+                  options: [],
+                  order: ordered.length,
+                },
+              ]),
+            };
+          });
+        },
+      });
+    }
+
+    if (insights.peakDay && insights.totalPaid > 5 && !dismissed.has(INSIGHT_IDS.peakDay)) {
+      const day = insights.peakDay;
+      analyticsCandidates.push({
+        id: INSIGHT_IDS.peakDay,
+        kind: "info",
+        title: "Peak day opportunity",
+        message: `Most of your payments happen on ${day}. Add urgency messaging to boost conversions on other days.`,
+        apply: () => {
+          setPage((p) => ({
+            ...p,
+            headerMessage: `Payment activity peaks on ${day}s — complete your payment today to avoid delays.`,
+          }));
+        },
+      });
+    }
+
+    if (insights.totalVisits > 0 && insights.totalPaid === 0 && !dismissed.has(INSIGHT_IDS.noPaymentsYet)) {
+      analyticsCandidates.push({
+        id: INSIGHT_IDS.noPaymentsYet,
+        kind: "warning",
+        title: "No successful payments yet",
+        message: `${insights.totalVisits} people have visited this page but nobody has paid. Check that your payment processor is configured correctly.`,
+      });
+    }
+  }
+
+  const formCandidates: InsightCandidate[] = [];
+
+  if (!dismissed.has(INSIGHT_IDS.noLogo) && !String(page.logoUrl ?? "").trim()) {
+    formCandidates.push({
+      id: INSIGHT_IDS.noLogo,
+      kind: "info",
+      title: "Add your logo",
+      message:
+        "A logo on the pay page builds trust. Paste an image URL under Branding & Styling — PNG, JPG, or SVG.",
+      apply: () => {
+        document.getElementById("page-logo-url")?.focus();
+      },
+    });
+  }
+
+  if (!dismissed.has(INSIGHT_IDS.noFields) && fieldCount === 0) {
+    formCandidates.push({
+      id: INSIGHT_IDS.noFields,
+      kind: "info",
+      title: "Add custom fields",
+      message:
+        "You have no custom data fields yet. Most teams collect at least a name and a reference or invoice number.",
+      apply: () => {
+        setPage((p) => ({
+          ...p,
+          fields: normalizeFieldOrder(defaultNameAndReferenceFields()),
+        }));
+      },
+    });
+  }
+
+  if (!dismissed.has(INSIGHT_IDS.unlabeledFields) && hasBlankLabels) {
+    formCandidates.push({
+      id: INSIGHT_IDS.unlabeledFields,
+      kind: "warning",
+      title: "Fields need labels",
+      message:
+        "Every visible field should have a label so payers know what to enter. Remove unused fields or name them.",
+      apply: () => {
+        setPage((p) => {
+          const ordered = p.fields.slice().sort((a, b) => a.order - b.order);
+          const next = ordered.filter(
+            (f) => String(f.label ?? "").trim() || f.required,
+          );
+          const fixed = next.map((f) =>
+            String(f.label ?? "").trim()
+              ? f
+              : { ...f, label: "Information", placeholder: f.placeholder ?? "Enter details" },
+          );
+          return { ...p, fields: normalizeFieldOrder(fixed) };
+        });
+      },
+    });
+  }
+
+  if (!dismissed.has(INSIGHT_IDS.emptyDropdown) && hasEmptyDropdown) {
+    formCandidates.push({
+      id: INSIGHT_IDS.emptyDropdown,
+      kind: "warning",
+      title: "Dropdown needs options",
+      message:
+        "At least one dropdown has no choices. Add comma-separated options in the field editor or change the type.",
+      apply: () => {
+        setPage((p) => ({
+          ...p,
+          fields: normalizeFieldOrder(
+            p.fields.map((f) =>
+              f.type === "DROPDOWN" && (f.options?.length ?? 0) === 0
+                ? { ...f, options: ["Option 1", "Option 2"] }
+                : f,
+            ),
+          ),
+        }));
+      },
+    });
+  }
+
+  if (!dismissed.has(INSIGHT_IDS.fieldLimit) && atFieldCap) {
+    formCandidates.push({
+      id: INSIGHT_IDS.fieldLimit,
+      kind: "warning",
+      title: "Maximum fields reached",
+      message: hasRemovableOptionalField
+        ? `You are using all ${MAX_CUSTOM_FIELDS} custom fields. Remove optional fields you do not need so the form stays easy to complete.`
+        : `You are using all ${MAX_CUSTOM_FIELDS} custom fields and every field is required. Make some fields optional in the editor, then you can remove ones you do not need.`,
+      apply: hasRemovableOptionalField
+        ? () => {
+            setPage((p) => {
+              const ordered = p.fields.slice().sort((a, b) => a.order - b.order);
+              for (let i = ordered.length - 1; i >= 0; i--) {
+                if (!ordered[i].required) {
+                  const next = ordered.filter((_, idx) => idx !== i);
+                  return { ...p, fields: normalizeFieldOrder(next) };
+                }
+              }
+              return p;
+            });
+          }
+        : undefined,
+    });
+  }
+
+  if (!dismissed.has(INSIGHT_IDS.noSubtitle) && !String(page.subtitle ?? "").trim()) {
+    formCandidates.push({
+      id: INSIGHT_IDS.noSubtitle,
+      kind: "info",
+      title: "Add a short subtitle",
+      message:
+        "A one-line description under the title explains what the payment is for and reduces confusion.",
+      apply: () => {
+        setPage((p) => ({
+          ...p,
+          subtitle: "Secure payment — complete the form below.",
+        }));
+        requestAnimationFrame(() => document.getElementById("page-insights-subtitle")?.focus());
+      },
+    });
+  }
+
+  const candidates = [...analyticsCandidates, ...formCandidates];
+
+  const subtitleVisits = insights?.totalVisits ?? 0;
+  const subtitlePaid = insights?.totalPaid ?? 0;
+  const analyticsReady = Boolean(insights && !insightsLoading);
+  const showAllClear =
+    analyticsReady && analyticsCandidates.length === 0 && formCandidates.length === 0;
+
+  return (
+    <Section
+      title="Page Insights"
+      icon={
+        <div className="h-9 w-9 rounded-2xl bg-violet-50 border border-violet-100 grid place-items-center text-violet-700 text-sm font-semibold">
+          ✦
+        </div>
+      }
+    >
+      <div className="space-y-3">
+        <div className="text-xs text-zinc-500">
+          Based on {insightsLoading ? "…" : subtitleVisits} visits and {insightsLoading ? "…" : subtitlePaid}{" "}
+          payments
+          {formCandidates.length > 0 ? (
+            <span className="text-zinc-400"> · Smart suggestions also reflect your form and branding setup</span>
+          ) : null}
+        </div>
+        {!insights && !insightsLoading ? (
+          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-600">
+            Analytics unavailable. Check Supabase configuration and the page_visits table.
+          </div>
+        ) : null}
+        {showAllClear ? (
+          <div
+            className="rounded-2xl border border-emerald-200 bg-emerald-50/80 px-4 py-3 text-sm text-emerald-900"
+            role="status"
+            aria-live="polite"
+          >
+            ✅ Page looks good!
+          </div>
+        ) : null}
+        {candidates.map((c) => (
+          <InsightSuggestionCard
+            key={c.id}
+            id={c.id}
+            kind={c.kind}
+            title={c.title}
+            message={c.message}
+            hasApply={Boolean(c.apply)}
+            onApply={
+              c.apply
+                ? () => {
+                    c.apply?.();
+                    onDismiss(c.id);
+                  }
+                : undefined
+            }
+            onDismiss={() => onDismiss(c.id)}
+          />
+        ))}
+      </div>
+    </Section>
+  );
+}
+
+function InsightSuggestionCard({
+  id,
+  kind,
+  title,
+  message,
+  hasApply,
+  onApply,
+  onDismiss,
+}: {
+  id: string;
+  kind: "warning" | "info";
+  title: string;
+  message: string;
+  hasApply: boolean;
+  onApply?: () => void;
+  onDismiss: () => void;
+}) {
+  const titleId = `page-insight-title-${id}`;
+  const isWarning = kind === "warning";
+
+  return (
+    <div
+      role="region"
+      aria-labelledby={titleId}
+      className={cn(
+        "rounded-2xl border px-4 py-3 shadow-sm",
+        isWarning ? "border-amber-200 bg-amber-50/90" : "border-sky-200 bg-sky-50/90",
+      )}
+    >
+      <div className="flex gap-3">
+        <span className="text-lg shrink-0" aria-hidden="true">
+          {isWarning ? "⚠️" : "💡"}
+        </span>
+        <div className="min-w-0 flex-1 space-y-2">
+          <div id={titleId} className="text-sm font-semibold text-zinc-900">
+            {title}
+          </div>
+          <p className="text-sm text-zinc-700">{message}</p>
+          <div className="flex flex-wrap gap-2 pt-1">
+            {hasApply && onApply ? (
+              <Button type="button" variant="secondary" size="sm" onClick={onApply}>
+                Apply
+              </Button>
+            ) : null}
+            <Button type="button" variant="ghost" size="sm" className="text-zinc-700" onClick={onDismiss}>
+              Dismiss
+            </Button>
           </div>
         </div>
       </div>
