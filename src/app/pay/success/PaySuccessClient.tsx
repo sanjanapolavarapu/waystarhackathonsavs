@@ -15,11 +15,11 @@ export function PaySuccessClient() {
   React.useEffect(() => {
     const pi = searchParams.get("payment_intent");
     if (!pi) {
-      setSyncState("ok");
+      queueMicrotask(() => setSyncState("ok"));
       return;
     }
     let cancelled = false;
-    setSyncState("loading");
+    queueMicrotask(() => setSyncState("loading"));
     void (async () => {
       try {
         const res = await fetch("/api/stripe/sync-payment-intent", {

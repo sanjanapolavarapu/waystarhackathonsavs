@@ -22,7 +22,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Segmented } from "@/components/ui/segmented";
 import { Badge } from "@/components/ui/badge";
-import { buildPublicPayUrl, getPublicBaseUrl } from "@/lib/public-url";
+import { buildPublicPayUrl } from "@/lib/public-url";
 import { cn } from "@/lib/utils";
 
 const BRAND_COLORS = ["#0EA5E9", "#06B6D4", "#10B981", "#3B82F6", "#8B5CF6", "#F97316"];
