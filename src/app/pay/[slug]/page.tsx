@@ -40,7 +40,7 @@ export default function PublicPayPage({ params }: { params: { slug: string } }) 
         : "Enter amount";
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(1200px_600px_at_15%_20%,rgba(14,165,233,0.10),transparent_60%),radial-gradient(900px_500px_at_90%_10%,rgba(16,185,129,0.10),transparent_55%)] px-6 py-12">
+    <div className="min-h-screen bg-[#fbfbff] bg-[radial-gradient(1200px_600px_at_15%_20%,rgba(99,102,241,0.12),transparent_60%),radial-gradient(900px_500px_at_90%_10%,rgba(217,70,239,0.10),transparent_55%)] px-6 py-12">
       <div className="mx-auto w-full max-w-md">
         <div className="flex flex-col items-center">
           <div className="h-14 w-14 rounded-full border border-zinc-200 bg-white shadow-sm grid place-items-center">
@@ -103,11 +103,11 @@ export default function PublicPayPage({ params }: { params: { slug: string } }) 
               </div>
 
               <Button variant="primary" className="w-full" type="submit">
-                Complete Payment (UI)
+                Complete Payment
               </Button>
               <div className="flex items-center justify-center gap-2 text-xs text-zinc-500">
                 <ShieldCheck className="h-4 w-4" />
-                Secure, encrypted checkout UI
+                Secure, encrypted checkout
               </div>
             </form>
 
@@ -118,7 +118,7 @@ export default function PublicPayPage({ params }: { params: { slug: string } }) 
         </Card>
 
         <div className="mt-5 text-center text-xs text-zinc-500">
-          Powered by ClearCare Pay ·{" "}
+          Powered by Quick Payment Pages ·{" "}
           <Link className="underline underline-offset-4 hover:text-zinc-700" href="/admin/pages">
             Admin UI
           </Link>

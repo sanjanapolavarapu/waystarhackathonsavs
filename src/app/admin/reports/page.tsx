@@ -74,7 +74,7 @@ export default function ReportsUi() {
             <div className="mt-2 text-2xl font-semibold tracking-tight text-zinc-900">
               {totalPayments}
             </div>
-            <div className="mt-1 text-xs text-emerald-600">Success only</div>
+            <div className="mt-1 text-xs text-indigo-600">Success only</div>
           </CardContent>
         </Card>
         <Card className="bg-white/80 backdrop-blur">
@@ -83,7 +83,7 @@ export default function ReportsUi() {
             <div className="mt-2 text-2xl font-semibold tracking-tight text-zinc-900">
               {fmtMoney(totalAmount)}
             </div>
-            <div className="mt-1 text-xs text-emerald-600">Across all pages</div>
+            <div className="mt-1 text-xs text-indigo-600">Across all pages</div>
           </CardContent>
         </Card>
         <Card className="bg-white/80 backdrop-blur">
@@ -92,7 +92,7 @@ export default function ReportsUi() {
             <div className="mt-2 text-2xl font-semibold tracking-tight text-zinc-900">
               {fmtMoney(avg)}
             </div>
-            <div className="mt-1 text-xs text-emerald-600">Success only</div>
+            <div className="mt-1 text-xs text-indigo-600">Success only</div>
           </CardContent>
         </Card>
       </div>
