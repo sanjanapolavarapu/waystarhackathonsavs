@@ -11,18 +11,6 @@ import { OrgSwitcher } from "@/components/org-switcher";
 import { getSupabaseClient } from "@/lib/supabase";
 import { setSelectedOrgId } from "@/lib/org";
 
-function extractOrgId(value: unknown) {
-  if (typeof value === "string") return value;
-  if (!value || typeof value !== "object") return "";
-  const v = value as Record<string, unknown>;
-  const candidate =
-    (typeof v.id === "string" && v.id) ||
-    (typeof v.org_id === "string" && v.org_id) ||
-    (typeof v.organization_id === "string" && v.organization_id) ||
-    "";
-  return candidate;
-}
-
 export default function JoinOrganizationPage() {
   const router = useRouter();
   const [code, setCode] = React.useState("");
@@ -97,23 +85,8 @@ export default function JoinOrganizationPage() {
                     setError(error.message);
                     return;
                   }
-                  let orgId = extractOrgId(data);
-                  if (!orgId) {
-                    const { data: membershipRows } = await supabase
-                      .from("organization_members")
-                      .select("organization_id")
-                      .order("created_at", { ascending: false })
-                      .limit(1);
-                    orgId =
-                      typeof membershipRows?.[0]?.organization_id === "string"
-                        ? membershipRows[0].organization_id
-                        : "";
-                  }
-                  if (!orgId) {
-                    setError("Joined org, but could not select it yet. Please refresh and try again.");
-                    return;
-                  }
-                  setSelectedOrgId(orgId);
+                  const orgId = String(data ?? "");
+                  if (orgId) setSelectedOrgId(orgId);
                   router.replace("/admin/pages");
                   router.refresh();
                 } finally {
