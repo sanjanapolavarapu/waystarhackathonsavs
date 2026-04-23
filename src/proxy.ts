@@ -21,6 +21,11 @@ async function hasValidAdminCookie(req: NextRequest) {
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
+  // Public landing + public pay pages should not require admin session.
+  if (pathname === "/" || pathname.startsWith("/pay")) {
+    return NextResponse.next();
+  }
+
   // Allow auth endpoints and auth pages without session.
   if (pathname === "/admin/login" || pathname === "/admin/signup") {
     const ok = await hasValidAdminCookie(req);
@@ -36,11 +41,6 @@ export async function proxy(req: NextRequest) {
   const ok = await hasValidAdminCookie(req);
   if (!ok) {
     return NextResponse.redirect(new URL("/admin/login", req.url));
-  }
-
-  // Treat "/" as a landing redirect into Pages.
-  if (pathname === "/") {
-    return NextResponse.redirect(new URL("/admin/pages", req.url));
   }
 
   return NextResponse.next();
