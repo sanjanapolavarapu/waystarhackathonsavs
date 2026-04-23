@@ -3,7 +3,6 @@ import { headers } from 'next/headers';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { getStripeServer } from '@/lib/stripe';
 
-const stripe = getStripeServer();
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 function toTxStatus(stripeStatus, eventType) {
@@ -16,6 +15,14 @@ function toTxStatus(stripeStatus, eventType) {
 }
 
 export async function POST(req) {
+  const stripe = getStripeServer();
+  if (!stripe) {
+    return NextResponse.json(
+      { error: "Stripe is not configured on server." },
+      { status: 500 },
+    );
+  }
+
   const body = await req.text();
   
   // FIX: Await the headers before calling .get()
