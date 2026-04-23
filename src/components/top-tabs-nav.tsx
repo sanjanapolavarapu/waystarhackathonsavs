@@ -41,7 +41,11 @@ export function TopTabsNav({
 
   return (
     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-      <div className="flex items-center gap-3">
+      <Link
+        href="/"
+        aria-label="Home"
+        className="flex items-center gap-3 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+      >
         <div className="h-10 w-10 rounded-2xl bg-white border border-zinc-200/80 shadow-sm grid place-items-center">
           <div className="h-5 w-5 rounded-lg bg-indigo-600" />
         </div>
@@ -51,7 +55,7 @@ export function TopTabsNav({
           </div>
           <div className="text-xs text-zinc-500">{subtitle}</div>
         </div>
-      </div>
+      </Link>
 
       <div className="flex items-center justify-between gap-3 md:justify-end">
         <div className="inline-flex items-center gap-1 rounded-2xl border border-zinc-200 bg-white/80 backdrop-blur p-1 shadow-sm">
