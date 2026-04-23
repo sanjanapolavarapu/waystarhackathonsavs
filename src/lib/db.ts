@@ -1,6 +1,5 @@
 import type { PaymentPage, Transaction } from "@/lib/qpp-types";
 import { getSupabaseClient } from "@/lib/supabase";
-import { getSelectedOrgId } from "@/lib/org";
 import { fromPaymentPagesRow } from "@/lib/paymentPagesDb";
 import { fromCustomFieldRow } from "@/lib/customFieldsDb";
 
@@ -22,22 +21,13 @@ function requireSupabase() {
   return client;
 }
 
-function getOrgIdOptional() {
-  // TEMP: org gating/scoping disabled (hackathon mode)
-  return getSelectedOrgId();
-}
-
 // Fetch one page with its custom fields by slug (org-scoped)
 export async function getPageBySlug(slug: string): Promise<PaymentPage | null> {
   const client = requireSupabase();
-  const orgId = getOrgIdOptional();
 
-  let query = client
-    .from("payment_pages")
-    .select("*")
-    .eq("slug", slug);
-  if (orgId) query = query.eq("organization_id", orgId);
-  const result = await query.maybeSingle();
+  // TEMP: org scoping disabled (hackathon mode). Some environments create pages
+  // without an organization_id, which would make org-scoped reads return 404.
+  const result = await client.from("payment_pages").select("*").eq("slug", slug).maybeSingle();
 
   if (result.error) throw result.error;
   if (!result.data) return null;
@@ -62,11 +52,11 @@ export async function getPageBySlug(slug: string): Promise<PaymentPage | null> {
 // Fetch all pages (org-scoped)
 export async function listPages(): Promise<PaymentPage[]> {
   const client = requireSupabase();
-  const orgId = getOrgIdOptional();
-
-  let query = client.from("payment_pages").select("*");
-  if (orgId) query = query.eq("organization_id", orgId);
-  const result = await query.order("updated_at", { ascending: false });
+  // TEMP: org scoping disabled (hackathon mode).
+  const result = await client
+    .from("payment_pages")
+    .select("*")
+    .order("updated_at", { ascending: false });
 
   if (result.error) throw result.error;
   return (result.data ?? [])
