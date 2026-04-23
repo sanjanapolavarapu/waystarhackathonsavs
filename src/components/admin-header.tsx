@@ -19,8 +19,11 @@ export function AdminHeader() {
       actions={
         <>
           <OrgSwitcher />
-          <ThemeToggle className="h-10 w-10 px-0 rounded-lg border border-zinc-200 bg-white/60 backdrop-blur hover:bg-white" />
-          <Link className="text-sm font-medium text-zinc-600 hover:text-zinc-900" href="/admin/logout">
+          <ThemeToggle className="h-10 w-10 px-0 rounded-lg border border-zinc-200 bg-white/60 backdrop-blur hover:bg-white dark:border-zinc-800 dark:bg-zinc-950/40 dark:hover:bg-zinc-950/60" />
+          <Link
+            className="text-sm font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"
+            href="/admin/logout"
+          >
             Logout
           </Link>
         </>
