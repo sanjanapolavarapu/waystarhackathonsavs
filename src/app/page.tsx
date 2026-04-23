@@ -22,6 +22,13 @@ import { TopTabsNav } from "@/components/top-tabs-nav";
 import { getSupabaseClient } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
+function getPublicBaseUrl() {
+  const envBase = process.env.NEXT_PUBLIC_BASE_URL?.trim();
+  if (envBase) return envBase.replace(/\/+$/, "");
+  if (typeof window !== "undefined") return window.location.origin;
+  return "";
+}
+
 type CustomField = {
   id: string;
   label: string;
@@ -640,6 +647,8 @@ function PreviewShell({
   brandColor: string;
   children: React.ReactNode;
 }) {
+  const baseUrl = getPublicBaseUrl();
+  const displayHost = baseUrl ? baseUrl.replace(/^https?:\/\//i, "") : "your-domain";
   return (
     <div className="rounded-[28px] border border-zinc-200/80 bg-white/75 backdrop-blur p-4 shadow-[0_20px_60px_-30px_rgba(2,6,23,0.22)]">
       <div className="flex items-center justify-between rounded-2xl bg-zinc-50/80 border border-zinc-200 px-3 py-2 text-xs text-zinc-700">
@@ -650,7 +659,7 @@ function PreviewShell({
             <div className="h-2.5 w-2.5 rounded-full bg-green-400/90" />
           </div>
           <div className="ml-2 rounded-lg bg-white/70 border border-zinc-200 px-2 py-1 text-[11px] text-zinc-600">
-            yourdomain.com/pay/consulting-session
+            {displayHost}/pay/consulting-session
           </div>
         </div>
         <div

@@ -55,6 +55,13 @@ function normalizeFieldOrder(fields: CustomField[]) {
   return fields.map((field, index) => ({ ...field, order: index }));
 }
 
+function getPublicBaseUrl() {
+  const envBase = process.env.NEXT_PUBLIC_BASE_URL?.trim();
+  if (envBase) return envBase.replace(/\/+$/, "");
+  if (typeof window !== "undefined") return window.location.origin;
+  return "";
+}
+
 export default function AdminPageEditor({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = React.use(params);
   const [page, setPage] = React.useState<PaymentPage>(EMPTY_PAGE);
@@ -105,7 +112,7 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
         ? "range"
         : "custom";
 
-  const publicUrl = `https://yourdomain.com/pay/${page.slug}`;
+  const publicUrl = `${getPublicBaseUrl()}/pay/${page.slug}`;
   const iframeSnippet = `<iframe src="${publicUrl}" style="width:100%;max-width:480px;border:0;border-radius:16px;overflow:hidden" height="740" title="${page.title}"></iframe>`;
 
   function setAmountMode(next: "fixed" | "range" | "custom") {
@@ -737,6 +744,8 @@ function PreviewShell({
   urlPath: string;
   children: React.ReactNode;
 }) {
+  const baseUrl = getPublicBaseUrl();
+  const displayHost = baseUrl ? baseUrl.replace(/^https?:\/\//i, "") : "your-domain";
   return (
     <div className="rounded-[28px] border border-zinc-200/80 bg-white/75 backdrop-blur p-4 shadow-[0_20px_60px_-30px_rgba(2,6,23,0.22)]">
       <div className="flex items-center justify-between rounded-2xl bg-zinc-50/80 border border-zinc-200 px-3 py-2 text-xs text-zinc-700">
@@ -747,7 +756,7 @@ function PreviewShell({
             <div className="h-2.5 w-2.5 rounded-full bg-green-400/90" />
           </div>
           <div className="ml-2 rounded-lg bg-white/70 border border-zinc-200 px-2 py-1 text-[11px] text-zinc-600">
-            yourdomain.com{urlPath}
+            {displayHost}{urlPath}
           </div>
         </div>
         <div
