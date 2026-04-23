@@ -5,7 +5,7 @@
 
 
 **Live App:** `https://waystarhackathonsavs-2bb5.vercel.app/` 
-**Demo Admin:** `admin@owner.com` / `owner` 
+**Demo Admin:** `owner@demo.com` / `owner` 
 **Repo:** `https://github.com/sanjanapolavarapu/waystarhackathonsavs`
 
 
