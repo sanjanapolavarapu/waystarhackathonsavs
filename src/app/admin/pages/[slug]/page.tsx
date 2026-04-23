@@ -1400,7 +1400,7 @@ function PaymentPreview({ page }: { page: PaymentPage }) {
   const [logoBroken, setLogoBroken] = React.useState(false);
 
   React.useEffect(() => {
-    setLogoBroken(false);
+    queueMicrotask(() => setLogoBroken(false));
   }, [page.logoUrl]);
 
   const amount =
