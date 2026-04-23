@@ -2,10 +2,16 @@ import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { getStripeServer } from '@/lib/stripe';
 
-const stripe = getStripeServer();
-
 export async function POST(request) {
   try {
+    const stripe = getStripeServer();
+    if (!stripe) {
+      return NextResponse.json(
+        { error: "Stripe is not configured on server." },
+        { status: 500 },
+      );
+    }
+
     const body = await request.json();
     // amount must be in CENTS (e.g., $25.00 = 2500)
     const { amount, payerEmail, pageSlug } = body; 

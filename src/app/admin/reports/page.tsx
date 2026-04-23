@@ -4,6 +4,7 @@ import * as React from "react";
 import { Download } from "lucide-react";
 
 import { getSupabaseClient } from "@/lib/supabase";
+import { getSelectedOrgId } from "@/lib/org";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -68,10 +69,23 @@ export default function ReportsUi() {
   React.useEffect(() => {
     let mounted = true;
     const supabase = getSupabaseClient();
+    const orgId = getSelectedOrgId();
 
     if (!supabase) {
-      setError("Supabase isn’t configured.");
-      setLoading(false);
+      queueMicrotask(() => {
+        if (!mounted) return;
+        setError("Supabase isn’t configured.");
+        setLoading(false);
+      });
+      return;
+    }
+
+    if (!orgId) {
+      queueMicrotask(() => {
+        if (!mounted) return;
+        setError("Select or join an organization to view reports.");
+        setLoading(false);
+      });
       return;
     }
 

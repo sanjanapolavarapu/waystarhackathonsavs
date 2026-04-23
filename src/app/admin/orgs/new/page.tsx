@@ -38,7 +38,7 @@ export default function NewOrganizationPage() {
             </label>
             <Input
               id="org_name"
-              placeholder="e.g., Sanju Consulting LLC"
+              placeholder="e.g., Acme Consulting LLC"
               value={name}
               onChange={(e) => setName(e.target.value)}
             />

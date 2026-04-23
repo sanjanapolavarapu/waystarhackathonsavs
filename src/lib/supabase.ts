@@ -24,10 +24,16 @@ export function getSupabaseClient() {
   if (!url || !anonKey) return null;
   if (client) return client;
 
-  client = createClient(url, anonKey);
+  try {
+    client = createClient(url, anonKey);
+  } catch {
+    // If env vars are malformed (common in deployments), don't crash builds.
+    return null;
+  }
 
   return client;
 }
 
-// Backward-compatible export used by db helpers.
-export const supabase = getSupabaseClient();
+// Backward-compatible export used by older code paths.
+// Note: intentionally NOT initialized at import-time to avoid build-time crashes.
+export const supabase = null;

@@ -19,13 +19,8 @@ export function OrgSwitcher({ className }: { className?: string }) {
   const router = useRouter();
 
   const [orgs, setOrgs] = React.useState<Organization[]>([]);
-  const [selectedId, setSelectedId] = React.useState<string | null>(null);
+  const [selectedId, setSelectedId] = React.useState<string | null>(() => getSelectedOrgId());
   const [open, setOpen] = React.useState(false);
-
-  React.useEffect(() => {
-    const initial = getSelectedOrgId();
-    if (initial) setSelectedId(initial);
-  }, []);
 
   React.useEffect(() => {
     let mounted = true;
@@ -54,6 +49,14 @@ export function OrgSwitcher({ className }: { className?: string }) {
         .filter((o): o is { id: string; name: string } => Boolean(o?.id));
 
       setOrgs(next);
+
+      // If the selected org no longer exists (deleted / membership removed), clear it.
+      if (selectedId && !next.some((o) => o.id === selectedId)) {
+        setSelectedId(null);
+        setSelectedOrgId("");
+        router.refresh();
+        return;
+      }
 
       // pick a default if none selected
       if (!selectedId && next.length > 0) {
@@ -146,6 +149,15 @@ export function OrgSwitcher({ className }: { className?: string }) {
             >
               Invite codes
             </Link>
+            {selectedId ? (
+              <Link
+                href="/admin/orgs/delete"
+                onClick={() => setOpen(false)}
+                className="mt-2 block rounded-xl border border-red-200 bg-white px-3 py-2 text-center text-sm font-medium text-red-700 hover:bg-red-50"
+              >
+                Delete organization…
+              </Link>
+            ) : null}
           </div>
         </div>
       ) : null}
