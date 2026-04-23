@@ -19,6 +19,7 @@ export function Segmented({
     <div
       className={cn(
         "inline-flex rounded-xl border border-zinc-200 bg-zinc-50 p-1 shadow-sm",
+        "dark:border-zinc-800 dark:bg-zinc-900/30",
         className,
       )}
       role="tablist"
@@ -36,8 +37,8 @@ export function Segmented({
             className={cn(
               "h-9 px-4 rounded-lg text-sm font-medium transition-colors",
               active
-                ? "bg-white text-zinc-900 shadow-sm"
-                : "text-zinc-600 hover:text-zinc-900",
+                ? "bg-white text-zinc-900 shadow-sm dark:bg-zinc-950/50 dark:text-zinc-100"
+                : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100",
             )}
           >
             {opt.label}
