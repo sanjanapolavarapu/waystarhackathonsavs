@@ -1,8 +1,8 @@
 "use client";
 
-import * as React from "react";
 import Link from "next/link";
 import { Plus, Search } from "lucide-react";
+import * as React from "react";
 
 import { listPages } from "@/lib/db";
 import type { PaymentPage } from "@/lib/qpp-types";
@@ -14,14 +14,21 @@ import { Badge } from "@/components/ui/badge";
 export default function AdminPagesList() {
   const [pages, setPages] = React.useState<PaymentPage[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     let cancelled = false;
 
     async function loadPages() {
       try {
+        setError(null);
         const data = await listPages();
         if (!cancelled) setPages(data);
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Failed to load pages.");
+          setPages([]);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -64,6 +71,11 @@ export default function AdminPagesList() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
+          {error ? (
+            <div className="px-5 py-4 text-sm text-red-700 bg-red-50 border-t border-red-200">
+              Couldn’t load pages from Supabase: {error}
+            </div>
+          ) : null}
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-sm">
               <thead className="border-t border-zinc-200 bg-zinc-50/70">
@@ -90,13 +102,13 @@ export default function AdminPagesList() {
                         <div
                           className="h-9 w-9 rounded-2xl border border-zinc-200 bg-white shadow-sm"
                           style={{
-                            boxShadow: `0 0 0 3px ${p.brandColor}22`,
+                            boxShadow: `0 0 0 3px ${(p.brandColor ?? "#6366f1")}22`,
                           }}
                           aria-hidden="true"
                         />
                         <div>
-                          <div className="font-semibold text-zinc-900">{p.title}</div>
-                          <div className="text-xs text-zinc-500">{p.subtitle}</div>
+                          <div className="font-semibold text-zinc-900">{p.title || "Untitled"}</div>
+                          <div className="text-xs text-zinc-500">{p.subtitle || ""}</div>
                         </div>
                       </div>
                     </td>
@@ -113,7 +125,7 @@ export default function AdminPagesList() {
                       )}
                     </td>
                     <td className="px-5 py-4 text-zinc-600">
-                      {new Date(p.updatedAt).toLocaleDateString()}
+                      {p.updatedAt ? new Date(p.updatedAt).toLocaleDateString() : "—"}
                     </td>
                     <td className="px-5 py-4">
                       <div className="flex justify-end gap-2">
@@ -137,10 +149,7 @@ export default function AdminPagesList() {
         </CardContent>
       </Card>
 
-      <div className="text-xs text-zinc-500">
-        UI-only note: wire this list to <span className="font-mono">GET /api/admin/pages</span>{" "}
-        later.
-      </div>
+      <div className="text-xs text-zinc-500">Showing pages from your configured data source.</div>
     </div>
   );
 }

@@ -56,7 +56,6 @@ export default function NewPageUi() {
       setSaving(false);
     }
   }
-
   return (
     <div className="mx-auto w-full max-w-2xl">
       <Card className="bg-white/80 backdrop-blur">
