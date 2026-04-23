@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { OrgSwitcher } from "@/components/org-switcher";
+import { copyTextToClipboard } from "@/lib/clipboard";
 import { getSupabaseClient } from "@/lib/supabase";
 import { getSelectedOrgId } from "@/lib/org";
 
@@ -16,6 +17,7 @@ export default function InviteCodesPage() {
   const [inviteCode, setInviteCode] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(false);
+  const [copied, setCopied] = React.useState(false);
 
   return (
     <div className="mx-auto w-full max-w-lg">
@@ -67,10 +69,16 @@ export default function InviteCodesPage() {
                   variant="secondary"
                   size="sm"
                   onClick={async () => {
-                    await navigator.clipboard.writeText(inviteCode);
+                        const res = await copyTextToClipboard(inviteCode);
+                    if (!res.ok) {
+                      setError("Could not copy. Please select and copy manually.");
+                      return;
+                    }
+                    setCopied(true);
+                    window.setTimeout(() => setCopied(false), 1200);
                   }}
                 >
-                  Copy
+                  {copied ? "Copied" : "Copy"}
                 </Button>
               </div>
             </div>
@@ -112,9 +120,9 @@ export default function InviteCodesPage() {
                 try {
                   const { data, error } = await supabase
                     .rpc("create_invite", {
-                      org_id: orgId,
                       invite_role: role.trim() || "member",
                       max_uses: Number(maxUses || "1"),
+                      org_id: orgId,
                     })
                     .single();
                   if (error) {

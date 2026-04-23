@@ -50,6 +50,14 @@ export function OrgSwitcher({ className }: { className?: string }) {
 
       setOrgs(next);
 
+      // If the selected org no longer exists (deleted / membership removed), clear it.
+      if (selectedId && !next.some((o) => o.id === selectedId)) {
+        setSelectedId(null);
+        setSelectedOrgId("");
+        router.refresh();
+        return;
+      }
+
       // pick a default if none selected
       if (!selectedId && next.length > 0) {
         setSelectedId(next[0].id);
