@@ -38,13 +38,7 @@ export function TopTabsNav({
   actions?: React.ReactNode;
 }) {
   const pathname = usePathname() ?? "/";
-  const [orgSelected, setOrgSelected] = React.useState(true);
-
-  React.useEffect(() => {
-    // Only matters for org-scoped admin pages (e.g. reports).
-    const id = getSelectedOrgId();
-    setOrgSelected(Boolean(id));
-  }, [pathname]);
+  const orgSelected = Boolean(getSelectedOrgId());
 
   const isAdminUi = pathname.startsWith("/admin");
 
