@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ShieldCheck } from "lucide-react";
 
 import { getPageBySlug } from "@/lib/mock-qpp";
+import { TopTabsNav } from "@/components/top-tabs-nav";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,7 +42,11 @@ export default function PublicPayPage({ params }: { params: { slug: string } }) 
 
   return (
     <div className="min-h-screen bg-[#fbfbff] bg-[radial-gradient(1200px_600px_at_15%_20%,rgba(99,102,241,0.12),transparent_60%),radial-gradient(900px_500px_at_90%_10%,rgba(217,70,239,0.10),transparent_55%)] px-6 py-12">
-      <div className="mx-auto w-full max-w-md">
+      <div className="mx-auto w-full max-w-[1240px]">
+        <TopTabsNav subtitle="Checkout" />
+      </div>
+
+      <div className="mx-auto mt-8 w-full max-w-md">
         <div className="flex flex-col items-center">
           <div className="h-14 w-14 rounded-full border border-zinc-200 bg-white shadow-sm grid place-items-center">
             <div
