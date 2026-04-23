@@ -35,9 +35,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
             <Link
               className="text-sm font-medium text-zinc-600 hover:text-zinc-900"
-              href="/admin/login"
+              href="/admin/logout"
             >
-              Login UI
+              Logout
             </Link>
           </div>
         </div>
