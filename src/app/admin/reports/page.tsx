@@ -53,19 +53,13 @@ export default function ReportsUi() {
     const orgId = getSelectedOrgId();
 
     if (!supabase) {
-      queueMicrotask(() => {
-        if (!mounted) return;
-        setError("Supabase isn’t configured.");
-        setLoading(false);
-      });
+      setError("Supabase isn’t configured.");
+      setLoading(false);
       return;
     }
     if (!orgId) {
-      queueMicrotask(() => {
-        if (!mounted) return;
-        setError("Select or join an organization to view reports.");
-        setLoading(false);
-      });
+      setError("Select or join an organization to view reports.");
+      setLoading(false);
       return;
     }
 

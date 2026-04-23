@@ -4,7 +4,6 @@ import * as React from "react";
 import Link from "next/link";
 import * as QRCode from "qrcode";
 import {
-  ChevronUp,
   ChevronDown,
   Copy,
   Eye,
@@ -14,9 +13,9 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
-import { getPageBySlug, savePage } from "@/lib/db";
+import { getPageBySlug } from "@/lib/mock-qpp";
 import { validateGlCodes } from "@/lib/gl-code";
-import type { CustomField, CustomFieldType, PaymentPage } from "@/lib/qpp-types";
+import type { PaymentPage } from "@/lib/qpp-types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -25,77 +24,10 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 const BRAND_COLORS = ["#0EA5E9", "#06B6D4", "#10B981", "#3B82F6", "#8B5CF6", "#F97316"];
-const MAX_CUSTOM_FIELDS = 10;
-const FIELD_TYPE_OPTIONS: Array<{ value: CustomFieldType; label: string }> = [
-  { value: "TEXT", label: "Text" },
-  { value: "NUMBER", label: "Number" },
-  { value: "DROPDOWN", label: "Dropdown" },
-  { value: "DATE", label: "Date" },
-  { value: "CHECKBOX", label: "Checkbox" },
-];
 
-const EMPTY_PAGE: PaymentPage = {
-  id: "",
-  slug: "",
-  isActive: false,
-  title: "",
-  subtitle: "",
-  brandColor: BRAND_COLORS[0],
-  amountMode: "FIXED",
-  fixedAmountCents: 0,
-  minAmountCents: 0,
-  maxAmountCents: 0,
-  glCodes: [],
-  fields: [],
-  updatedAt: new Date(0).toISOString(),
-  createdAt: new Date(0).toISOString(),
-};
-
-function normalizeFieldOrder(fields: CustomField[]) {
-  return fields.map((field, index) => ({ ...field, order: index }));
-}
-
-export default function AdminPageEditor({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = React.use(params);
-  const [page, setPage] = React.useState<PaymentPage>(EMPTY_PAGE);
-  const [newFieldId, setNewFieldId] = React.useState<string | null>(null);
-  const [loading, setLoading] = React.useState(true);
-  const [loadError, setLoadError] = React.useState<string | null>(null);
-  const [saving, setSaving] = React.useState(false);
-  const [saveSuccess, setSaveSuccess] = React.useState<string | null>(null);
-  const [saveError, setSaveError] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    let cancelled = false;
-
-    async function loadPage() {
-      setLoading(true);
-      setLoadError(null);
-
-      try {
-        const loaded = await getPageBySlug(slug);
-        if (cancelled) return;
-
-        if (!loaded) {
-          setLoadError("Page not found.");
-          return;
-        }
-
-        setPage(structuredClone(loaded));
-      } catch (err) {
-        if (cancelled) return;
-        setLoadError(err instanceof Error ? err.message : "Failed to load page.");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-
-    void loadPage();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [slug]);
+export default function AdminPageEditor({ params }: { params: { slug: string } }) {
+  const initial = getPageBySlug(params.slug) ?? getPageBySlug("telehealth-consult");
+  const [page, setPage] = React.useState<PaymentPage>(() => structuredClone(initial!));
   const glValidation = validateGlCodes(page.glCodes);
 
   const amountModeUi: "fixed" | "range" | "custom" =
@@ -115,85 +47,6 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
     }));
   }
 
-  const sortedFields = page.fields.slice().sort((a, b) => a.order - b.order);
-  const maxFieldsReached = page.fields.length >= MAX_CUSTOM_FIELDS;
-
-  function addField() {
-    if (maxFieldsReached) return;
-    const id = `field_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-    setNewFieldId(id);
-    setPage((p) => ({
-      ...p,
-      fields: normalizeFieldOrder([
-        ...p.fields,
-        {
-          id,
-          label: "",
-          type: "TEXT",
-          required: false,
-          placeholder: "",
-          helperText: "",
-          options: [],
-          order: p.fields.length,
-        },
-      ]),
-    }));
-  }
-
-  function updateField(fieldId: string, updates: Partial<CustomField>) {
-    setPage((p) => ({
-      ...p,
-      fields: p.fields.map((field) => (field.id === fieldId ? { ...field, ...updates } : field)),
-    }));
-  }
-
-  function deleteField(fieldId: string) {
-    setPage((p) => ({
-      ...p,
-      fields: normalizeFieldOrder(p.fields.filter((field) => field.id !== fieldId)),
-    }));
-  }
-
-  function moveField(fieldId: string, direction: "up" | "down") {
-    setPage((p) => {
-      const sorted = p.fields.slice().sort((a, b) => a.order - b.order);
-      const index = sorted.findIndex((field) => field.id === fieldId);
-      if (index < 0) return p;
-
-      const targetIndex = direction === "up" ? index - 1 : index + 1;
-      if (targetIndex < 0 || targetIndex >= sorted.length) return p;
-
-      const next = sorted.slice();
-      const [moved] = next.splice(index, 1);
-      next.splice(targetIndex, 0, moved);
-
-      return { ...p, fields: normalizeFieldOrder(next) };
-    });
-  }
-
-  async function handlePublish() {
-    setSaving(true);
-    setSaveSuccess(null);
-    setSaveError(null);
-
-    try {
-      await savePage(page);
-      setSaveSuccess("Page saved successfully.");
-    } catch (err) {
-      setSaveError(err instanceof Error ? err.message : "Failed to save page.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  if (loading) {
-    return <div className="py-10 text-sm text-zinc-600">Loading...</div>;
-  }
-
-  if (loadError) {
-    return <div className="py-10 text-sm text-red-600">{loadError}</div>;
-  }
-
   return (
     <div className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -209,22 +62,20 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {saveError ? <div className="text-sm text-red-600">{saveError}</div> : null}
-          {saveSuccess ? <div className="text-sm text-emerald-700">{saveSuccess}</div> : null}
           <Link href="/admin/pages">
             <Button variant="secondary">Back</Button>
           </Link>
           <Button variant="ghost" className="hover:bg-white/60">
             Save draft
           </Button>
-          <Button variant="primary" onClick={handlePublish} disabled={saving || !glValidation.valid}>
-            {saving ? "Saving..." : "Publish"}
+          <Button variant="primary" disabled={!glValidation.valid}>
+            Publish
           </Button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-        <div className="relative z-10 space-y-5">
+        <div className="space-y-5">
           <Card className="bg-white/80 backdrop-blur">
             <CardHeader className="flex flex-row items-start justify-between">
               <div>
@@ -385,168 +236,63 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
                     ≡
                   </div>
                 }
+                action={
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPage((p) => ({
+                        ...p,
+                        fields: [
+                          ...p.fields,
+                          {
+                            id: `field_${p.fields.length + 1}`,
+                            label: "New field",
+                            type: "TEXT",
+                            required: false,
+                            order: p.fields.length,
+                          },
+                        ],
+                      }))
+                    }
+                    className="text-sm font-medium text-indigo-700 hover:text-indigo-800 hover:underline underline-offset-4"
+                  >
+                    + Add Field
+                  </button>
+                }
               >
                 <div className="space-y-3">
-                  {sortedFields.map((f, index) => {
-                    const fieldBaseId = `custom-field-${f.id}`;
-
-                    return (
+                  {page.fields
+                    .slice()
+                    .sort((a, b) => a.order - b.order)
+                    .map((f) => (
                       <div
                         key={f.id}
-                        className={cn(
-                          "relative z-10 space-y-3 rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm transition hover:shadow-md",
-                          newFieldId === f.id && "border-indigo-300 ring-2 ring-indigo-200/70",
-                        )}
+                        className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-3 py-2 shadow-sm transition hover:shadow-md"
                       >
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                          <div className="space-y-1.5">
-                            <label
-                              htmlFor={`${fieldBaseId}-label`}
-                              className="text-xs font-medium text-zinc-600"
-                            >
-                              Field label
-                            </label>
-                            <Input
-                              id={`${fieldBaseId}-label`}
-                              value={f.label}
-                              onChange={(e) => updateField(f.id, { label: e.target.value })}
-                              onFocus={() => {
-                                if (newFieldId === f.id) setNewFieldId(null);
-                              }}
-                              autoFocus={newFieldId === f.id}
-                              className="relative z-10"
-                            />
-                            <div className="flex items-center gap-2 pt-1">
-                              <input
-                                id={`${fieldBaseId}-required`}
-                                type="checkbox"
-                                checked={f.required}
-                                onChange={(e) => updateField(f.id, { required: e.target.checked })}
-                                className="h-4 w-4 rounded border-zinc-300 text-sky-600 focus:ring-sky-500"
-                              />
-                              <label
-                                htmlFor={`${fieldBaseId}-required`}
-                                className="text-sm font-medium text-zinc-700"
-                              >
-                                Required
-                              </label>
-                            </div>
-                          </div>
-                          <div className="space-y-1.5">
-                            <label
-                              htmlFor={`${fieldBaseId}-type`}
-                              className="text-xs font-medium text-zinc-600"
-                            >
-                              Field type
-                            </label>
-                            <select
-                              id={`${fieldBaseId}-type`}
-                              value={f.type}
-                              onChange={(e) => {
-                                const nextType = e.target.value as CustomFieldType;
-                                updateField(f.id, {
-                                  type: nextType,
-                                  options: nextType === "DROPDOWN" ? f.options ?? [] : [],
-                                });
-                              }}
-                              className="relative z-10 h-11 w-full rounded-2xl border border-zinc-200 bg-white px-4 text-sm text-zinc-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500"
-                            >
-                              {FIELD_TYPE_OPTIONS.map((opt) => (
-                                <option key={opt.value} value={opt.value}>
-                                  {opt.label}
-                                </option>
-                              ))}
-                            </select>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-medium text-zinc-900">{f.label}</div>
+                          <div className="mt-1 text-xs text-zinc-500">
+                            {f.required ? "Required" : "Optional"}
                           </div>
                         </div>
-
-                        <div className="space-y-1.5">
-                          <label
-                            htmlFor={`${fieldBaseId}-placeholder`}
-                            className="text-xs font-medium text-zinc-600"
+                        <div className="flex items-center gap-2">
+                          <div className="inline-flex items-center gap-1 rounded-lg border border-zinc-200 bg-zinc-50 px-2 py-1 text-xs font-medium text-zinc-700">
+                            {f.type}
+                            <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setPage((p) => ({ ...p, fields: p.fields.filter((x) => x.id !== f.id) }))
+                            }
+                            className="h-9 w-9 rounded-xl hover:bg-zinc-100 text-zinc-500"
+                            aria-label={`Remove ${f.label}`}
                           >
-                            Placeholder text
-                          </label>
-                          <Input
-                            id={`${fieldBaseId}-placeholder`}
-                            value={f.placeholder ?? ""}
-                            onChange={(e) => updateField(f.id, { placeholder: e.target.value })}
-                            className="relative z-10"
-                          />
-                        </div>
-
-                        {f.type === "DROPDOWN" ? (
-                          <div className="space-y-1.5">
-                            <label
-                              htmlFor={`${fieldBaseId}-options`}
-                              className="text-xs font-medium text-zinc-600"
-                            >
-                              Dropdown options (comma-separated)
-                            </label>
-                            <Input
-                              id={`${fieldBaseId}-options`}
-                              value={(f.options ?? []).join(", ")}
-                              onChange={(e) =>
-                                updateField(f.id, {
-                                  options: e.target.value
-                                    .split(",")
-                                    .map((s) => s.trim())
-                                    .filter(Boolean),
-                                })
-                              }
-                              className="relative z-10"
-                            />
-                          </div>
-                        ) : null}
-
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <div className="flex items-center gap-1">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => moveField(f.id, "up")}
-                              disabled={index === 0}
-                              aria-label={`Move ${f.label || "field"} up`}
-                            >
-                              <ChevronUp className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => moveField(f.id, "down")}
-                              disabled={index === sortedFields.length - 1}
-                              aria-label={`Move ${f.label || "field"} down`}
-                            >
-                              <ChevronDown className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => deleteField(f.id)}
-                              aria-label={`Delete ${f.label || "field"}`}
-                            >
-                              Delete
-                            </Button>
-                          </div>
+                            ×
+                          </button>
                         </div>
                       </div>
-                    );
-                  })}
-
-                  {maxFieldsReached ? (
-                    <div className="text-xs font-medium text-amber-700">
-                      Maximum of {MAX_CUSTOM_FIELDS} fields reached.
-                    </div>
-                  ) : null}
-
-                  <div className="pt-1">
-                    <Button variant="secondary" size="sm" onClick={addField} disabled={maxFieldsReached}>
-                      + Add Field
-                    </Button>
-                  </div>
+                    ))}
                 </div>
               </Section>
 
@@ -676,11 +422,11 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
           </Card>
         </div>
 
-        <div className="relative z-0 h-fit lg:sticky lg:top-6 lg:pointer-events-none">
+        <div className="lg:sticky lg:top-6 h-fit">
           <PreviewShell brandColor={page.brandColor} urlPath={`/pay/${page.slug}`}>
             <PaymentPreview page={page} />
           </PreviewShell>
-          <div className="mt-3 flex items-center justify-end gap-2 lg:pointer-events-auto">
+          <div className="mt-3 flex items-center justify-end gap-2">
             <Link href={`/pay/${page.slug}`}>
               <Button variant="secondary" size="sm">
                 <Eye className="h-4 w-4" />

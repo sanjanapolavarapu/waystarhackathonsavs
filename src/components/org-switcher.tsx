@@ -19,8 +19,13 @@ export function OrgSwitcher({ className }: { className?: string }) {
   const router = useRouter();
 
   const [orgs, setOrgs] = React.useState<Organization[]>([]);
-  const [selectedId, setSelectedId] = React.useState<string | null>(() => getSelectedOrgId());
+  const [selectedId, setSelectedId] = React.useState<string | null>(null);
   const [open, setOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    const initial = getSelectedOrgId();
+    if (initial) setSelectedId(initial);
+  }, []);
 
   React.useEffect(() => {
     let mounted = true;

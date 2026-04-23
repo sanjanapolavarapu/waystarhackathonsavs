@@ -4,39 +4,56 @@ import Link from "next/link";
 import { Plus, Search } from "lucide-react";
 import * as React from "react";
 
-import { listPages } from "@/lib/db";
-import type { PaymentPage } from "@/lib/qpp-types";
+import { getSupabaseClient } from "@/lib/supabase";
+import { getSelectedOrgId } from "@/lib/org";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 
 export default function AdminPagesList() {
-  const [pages, setPages] = React.useState<PaymentPage[]>([]);
-  const [loading, setLoading] = React.useState(true);
+  const [pages, setPages] = React.useState<
+    {
+      id: string;
+      title: string | null;
+      subtitle: string | null;
+      slug: string;
+      is_active: boolean | null;
+      brand_color: string | null;
+      updated_at: string | null;
+    }[]
+  >([]);
   const [error, setError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    let cancelled = false;
+    let mounted = true;
+    const supabase = getSupabaseClient();
+    const orgId = getSelectedOrgId();
 
-    async function loadPages() {
-      try {
-        setError(null);
-        const data = await listPages();
-        if (!cancelled) setPages(data);
-      } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Failed to load pages.");
-          setPages([]);
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+    if (!supabase || !orgId) {
+      setPages([]);
+      return;
     }
 
-    void loadPages();
+    void (async () => {
+      setError(null);
+      const { data, error } = await supabase
+        .from("payment_pages")
+        .select("id, title, subtitle, slug, is_active, brand_color, updated_at")
+        .eq("organization_id", orgId)
+        .order("updated_at", { ascending: false });
+
+      if (!mounted) return;
+      if (error) {
+        setError(error.message);
+        setPages([]);
+        return;
+      }
+      setPages((data as typeof pages) ?? []);
+    })();
+
     return () => {
-      cancelled = true;
+      mounted = false;
     };
   }, []);
 
@@ -88,13 +105,6 @@ export default function AdminPagesList() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-200">
-                {loading ? (
-                  <tr className="bg-white/60">
-                    <td className="px-5 py-6 text-zinc-600" colSpan={5}>
-                      Loading...
-                    </td>
-                  </tr>
-                ) : null}
                 {pages.map((p) => (
                   <tr key={p.id} className="bg-white/60">
                     <td className="px-5 py-4">
@@ -102,13 +112,15 @@ export default function AdminPagesList() {
                         <div
                           className="h-9 w-9 rounded-2xl border border-zinc-200 bg-white shadow-sm"
                           style={{
-                            boxShadow: `0 0 0 3px ${(p.brandColor ?? "#6366f1")}22`,
+                            boxShadow: `0 0 0 3px ${(p.brand_color ?? "#6366f1")}22`,
                           }}
                           aria-hidden="true"
                         />
                         <div>
-                          <div className="font-semibold text-zinc-900">{p.title || "Untitled"}</div>
-                          <div className="text-xs text-zinc-500">{p.subtitle || ""}</div>
+                          <div className="font-semibold text-zinc-900">
+                            {p.title ?? "Untitled"}
+                          </div>
+                          <div className="text-xs text-zinc-500">{p.subtitle ?? ""}</div>
                         </div>
                       </div>
                     </td>
@@ -118,14 +130,14 @@ export default function AdminPagesList() {
                       </span>
                     </td>
                     <td className="px-5 py-4">
-                      {p.isActive ? (
+                      {p.is_active ? (
                         <Badge variant="success">Active</Badge>
                       ) : (
                         <Badge variant="warning">Disabled</Badge>
                       )}
                     </td>
                     <td className="px-5 py-4 text-zinc-600">
-                      {p.updatedAt ? new Date(p.updatedAt).toLocaleDateString() : "—"}
+                      {p.updated_at ? new Date(p.updated_at).toLocaleDateString() : "—"}
                     </td>
                     <td className="px-5 py-4">
                       <div className="flex justify-end gap-2">
@@ -149,7 +161,7 @@ export default function AdminPagesList() {
         </CardContent>
       </Card>
 
-      <div className="text-xs text-zinc-500">Showing pages from your configured data source.</div>
+      <div className="text-xs text-zinc-500">Showing pages for the currently selected organization.</div>
     </div>
   );
 }
