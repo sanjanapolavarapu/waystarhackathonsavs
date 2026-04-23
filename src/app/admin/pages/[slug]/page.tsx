@@ -104,8 +104,11 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
   React.useEffect(() => {
     if (!page.id) return;
     let cancelled = false;
-    setPageInsights(null);
-    setInsightsLoading(true);
+    queueMicrotask(() => {
+      if (cancelled) return;
+      setPageInsights(null);
+      setInsightsLoading(true);
+    });
     void (async () => {
       try {
         const data = await getPageInsights(page.id);

@@ -5,7 +5,6 @@ import { Plus, Search } from "lucide-react";
 import * as React from "react";
 
 import { listPages } from "@/lib/db";
-import { getSelectedOrgId } from "@/lib/org";
 import type { PaymentPage } from "@/lib/qpp-types";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,19 +15,9 @@ export default function AdminPagesList() {
   const [pages, setPages] = React.useState<PaymentPage[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
-  const [orgSelected, setOrgSelected] = React.useState(true);
 
   React.useEffect(() => {
     let cancelled = false;
-    const selected = Boolean(getSelectedOrgId());
-    setOrgSelected(selected);
-    if (!selected) {
-      setLoading(false);
-      setPages([]);
-      return () => {
-        cancelled = true;
-      };
-    }
 
     async function loadPages() {
       try {
@@ -64,35 +53,14 @@ export default function AdminPagesList() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Link href="/admin/pages/new" aria-disabled={!orgSelected} tabIndex={!orgSelected ? -1 : 0}>
-            <Button variant="primary" disabled={!orgSelected}>
+          <Link href="/admin/pages/new">
+            <Button variant="primary">
               <Plus className="h-4 w-4" />
               New page
             </Button>
           </Link>
         </div>
       </div>
-
-      {!orgSelected ? (
-        <Card className="bg-white/80 backdrop-blur">
-          <CardContent className="p-5">
-            <div className="text-sm font-semibold text-zinc-900">
-              You’re not in an organization yet
-            </div>
-            <div className="mt-1 text-sm text-zinc-600">
-              Create an organization for your business or join your company with an invite code.
-            </div>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Link href="/admin/orgs/new">
-                <Button variant="primary">Create organization</Button>
-              </Link>
-              <Link href="/admin/orgs/join">
-                <Button variant="secondary">Join with code</Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      ) : null}
 
       <Card className="bg-white/80 backdrop-blur">
         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
