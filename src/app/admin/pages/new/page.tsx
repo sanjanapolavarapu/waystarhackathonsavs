@@ -48,8 +48,8 @@ export default function NewPageUi() {
         updatedAt: now,
       };
 
-      await savePage(page);
-      router.push(`/admin/pages/${safeSlug}`);
+      const created = await savePage(page);
+      router.push(`/admin/pages/${created.slug}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create page.");
     } finally {

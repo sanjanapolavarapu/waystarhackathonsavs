@@ -1,8 +1,8 @@
 import type { PaymentPage, Transaction } from "@/lib/qpp-types";
 import { getSupabaseClient } from "@/lib/supabase";
 import { getSelectedOrgId } from "@/lib/org";
-import { fromPaymentPagesRow, toPaymentPagesRow } from "@/lib/paymentPagesDb";
-import { fromCustomFieldRow, toCustomFieldRow } from "@/lib/customFieldsDb";
+import { fromPaymentPagesRow } from "@/lib/paymentPagesDb";
+import { fromCustomFieldRow } from "@/lib/customFieldsDb";
 
 async function jsonOrThrow<T>(res: Response): Promise<T> {
   const json = (await res.json().catch(() => ({}))) as unknown;
@@ -26,12 +26,6 @@ function requireOrgId() {
   const orgId = getSelectedOrgId();
   if (!orgId) throw new Error("Select or join an organization to continue.");
   return orgId;
-}
-
-async function requireUserId(client: ReturnType<typeof requireSupabase>) {
-  const { data, error } = await client.auth.getUser();
-  if (error || !data.user?.id) throw new Error("Not signed in.");
-  return data.user.id;
 }
 
 // Fetch one page with its custom fields by slug (org-scoped)
@@ -83,42 +77,39 @@ export async function listPages(): Promise<PaymentPage[]> {
     .filter((p): p is NonNullable<typeof p> => Boolean(p));
 }
 
-// Upsert page (org-scoped), then delete+reinsert its custom fields
-export async function savePage(page: PaymentPage): Promise<void> {
-  const client = requireSupabase();
-  const orgId = requireOrgId();
-  const userId = await requireUserId(client);
+/**
+ * Persist from the admin UI via server routes (service role + correct field_type mapping).
+ * Browser Supabase writes often fail under RLS; the API matches the admin editor expectations.
+ */
+export async function savePage(page: PaymentPage): Promise<PaymentPage> {
+  const slug = encodeURIComponent(page.slug);
+  const putRes = await fetch(`/api/admin/payment-pages/${slug}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ page }),
+    credentials: "same-origin",
+  });
 
-  // Upsert the page row.
-  const upsert = await client
-    .from("payment_pages")
-    .upsert(
-      {
-        organization_id: orgId,
-        admin_id: userId,
-        ...toPaymentPagesRow(page),
-      },
-      { onConflict: "slug" },
-    )
-    .select("id")
-    .eq("organization_id", orgId)
-    .eq("slug", page.slug)
-    .single();
-
-  if (upsert.error) throw upsert.error;
-  const pageId = upsert.data?.id;
-  if (!pageId) throw new Error("Failed to save page.");
-
-  // Replace fields.
-  const del = await client.from("custom_fields").delete().eq("page_id", pageId);
-  if (del.error) throw del.error;
-
-  if (page.fields?.length) {
-    const ins = await client
-      .from("custom_fields")
-      .insert(page.fields.map((f) => toCustomFieldRow(f, pageId)));
-    if (ins.error) throw ins.error;
+  if (putRes.ok) {
+    const body = (await putRes.json()) as { page?: PaymentPage; error?: string };
+    if (body.page) return body.page;
+    throw new Error(body.error || "Save failed: empty response from server.");
   }
+
+  if (putRes.status === 404) {
+    const postRes = await fetch("/api/admin/payment-pages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ page }),
+      credentials: "same-origin",
+    });
+    const body = await jsonOrThrow<{ page?: PaymentPage }>(postRes);
+    if (!body.page) throw new Error("Create failed: empty response from server.");
+    return body.page;
+  }
+
+  const errBody = (await putRes.json().catch(() => ({}))) as { error?: string };
+  throw new Error(errBody.error || `Failed to save page (${putRes.status})`);
 }
 
 // Fetch all transactions, join payment_pages to get slug
