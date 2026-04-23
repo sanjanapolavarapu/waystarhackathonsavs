@@ -1,13 +1,18 @@
+"use client";
+
+import * as React from "react";
 import { Download } from "lucide-react";
 
-import { listPages, listTransactions } from "@/lib/mock-qpp";
+import { OrgSwitcher } from "@/components/org-switcher";
+import { getSelectedOrgId } from "@/lib/org";
+import { getSupabaseClient } from "@/lib/supabase";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 
-function fmtMoney(cents: number) {
-  return `$${(cents / 100).toFixed(2)}`;
+function fmtMoney(amount: number) {
+  return amount.toLocaleString(undefined, { style: "currency", currency: "USD" });
 }
 
 function toCsv(rows: Record<string, string | number | undefined>[]) {
@@ -26,25 +31,112 @@ function toCsv(rows: Record<string, string | number | undefined>[]) {
 }
 
 export default function ReportsUi() {
-  const pages = listPages();
-  const tx = listTransactions();
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+  const [tx, setTx] = React.useState<
+    {
+      id: string;
+      page_slug?: string | null;
+      created_at?: string | null;
+      status?: string | null;
+      payment_method?: string | null;
+      amount?: number | null;
+      amount_cents?: number | null;
+      payer_email?: string | null;
+      gl_code?: string | null;
+    }[]
+  >([]);
 
-  const totalPayments = tx.filter((t) => t.status === "success").length;
-  const totalAmount = tx
-    .filter((t) => t.status === "success")
-    .reduce((sum, t) => sum + t.amountCents, 0);
-  const avg = totalPayments ? Math.round(totalAmount / totalPayments) : 0;
+  React.useEffect(() => {
+    let mounted = true;
+    const supabase = getSupabaseClient();
+    const orgId = getSelectedOrgId();
+
+    if (!supabase) {
+      setError("Supabase isn’t configured.");
+      setLoading(false);
+      return;
+    }
+    if (!orgId) {
+      setError("Select or join an organization to view reports.");
+      setLoading(false);
+      return;
+    }
+
+    void (async () => {
+      setLoading(true);
+      setError(null);
+
+      // Verify org membership (RLS should also enforce, but this gives a friendly message).
+      const { data: membership, error: mErr } = await supabase
+        .from("organization_members")
+        .select("organization_id")
+        .eq("organization_id", orgId)
+        .limit(1);
+
+      if (!mounted) return;
+      if (mErr) {
+        setError(mErr.message);
+        setLoading(false);
+        return;
+      }
+      if (!membership || membership.length === 0) {
+        setError("You don’t have access to this organization. Join with a code or switch orgs.");
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("transactions")
+        .select("id, page_slug, created_at, status, payment_method, amount, amount_cents, payer_email, gl_code")
+        .eq("organization_id", orgId)
+        .order("created_at", { ascending: false });
+
+      if (!mounted) return;
+      if (error) {
+        setError(error.message);
+        setTx([]);
+        setLoading(false);
+        return;
+      }
+      setTx((data as typeof tx) ?? []);
+      setLoading(false);
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const success = tx.filter((t) => String(t.status ?? "").toLowerCase() === "success");
+  const totalPayments = success.length;
+  const totalAmount = success.reduce((sum, t) => {
+    const a =
+      typeof t.amount === "number"
+        ? t.amount
+        : typeof t.amount_cents === "number"
+          ? t.amount_cents / 100
+          : 0;
+    return sum + a;
+  }, 0);
+  const avg = totalPayments ? totalAmount / totalPayments : 0;
 
   const csv = toCsv(
     tx.map((t) => ({
       id: t.id,
-      page: t.pageSlug,
-      created_at: t.createdAt,
-      status: t.status,
-      payment_method: t.paymentMethod,
-      amount: fmtMoney(t.amountCents),
-      payer_email: t.payerEmail,
-      gl_code: t.glCode,
+      page: t.page_slug ?? "",
+      created_at: t.created_at ?? "",
+      status: t.status ?? "",
+      payment_method: t.payment_method ?? "",
+      amount: fmtMoney(
+        typeof t.amount === "number"
+          ? t.amount
+          : typeof t.amount_cents === "number"
+            ? t.amount_cents / 100
+            : 0,
+      ),
+      payer_email: t.payer_email ?? "",
+      gl_code: t.gl_code ?? "",
     })),
   );
 
@@ -56,23 +148,34 @@ export default function ReportsUi() {
         <div>
           <div className="text-xl font-semibold tracking-tight text-zinc-900">Reporting</div>
           <div className="mt-1 text-sm text-zinc-500">
-            UI-only reports — teammates can replace mock data with API results.
+            Reports are scoped to your selected organization.
           </div>
         </div>
-        <a href={downloadHref} download="transactions.csv">
+        <div className="flex items-center gap-2">
+          <OrgSwitcher />
+          <a href={downloadHref} download="transactions.csv">
           <Button variant="secondary">
             <Download className="h-4 w-4" />
             Export CSV
           </Button>
-        </a>
+          </a>
+        </div>
       </div>
+
+      {error ? (
+        <Card className="bg-white/80 backdrop-blur">
+          <CardContent className="p-5 text-sm text-zinc-700">
+            {error}
+          </CardContent>
+        </Card>
+      ) : null}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="bg-white/80 backdrop-blur">
           <CardContent className="p-5">
             <div className="text-xs font-medium text-zinc-500">Total payments</div>
             <div className="mt-2 text-2xl font-semibold tracking-tight text-zinc-900">
-              {totalPayments}
+              {loading ? "—" : totalPayments}
             </div>
             <div className="mt-1 text-xs text-indigo-600">Success only</div>
           </CardContent>
@@ -81,7 +184,7 @@ export default function ReportsUi() {
           <CardContent className="p-5">
             <div className="text-xs font-medium text-zinc-500">Total amount collected</div>
             <div className="mt-2 text-2xl font-semibold tracking-tight text-zinc-900">
-              {fmtMoney(totalAmount)}
+              {loading ? "—" : fmtMoney(totalAmount)}
             </div>
             <div className="mt-1 text-xs text-indigo-600">Across all pages</div>
           </CardContent>
@@ -90,7 +193,7 @@ export default function ReportsUi() {
           <CardContent className="p-5">
             <div className="text-xs font-medium text-zinc-500">Average payment</div>
             <div className="mt-2 text-2xl font-semibold tracking-tight text-zinc-900">
-              {fmtMoney(avg)}
+              {loading ? "—" : fmtMoney(avg)}
             </div>
             <div className="mt-1 text-xs text-indigo-600">Success only</div>
           </CardContent>
@@ -130,28 +233,31 @@ export default function ReportsUi() {
                     <td className="px-5 py-4">
                       <div className="font-mono text-xs text-zinc-700">{t.id}</div>
                       <div className="text-xs text-zinc-500">
-                        {new Date(t.createdAt).toLocaleString()}
+                        {t.created_at ? new Date(t.created_at).toLocaleString() : "—"}
                       </div>
                     </td>
                     <td className="px-5 py-4 text-zinc-800">
-                      <div className="font-medium">{t.pageSlug}</div>
-                      <div className="text-xs text-zinc-500">
-                        {pages.find((p) => p.slug === t.pageSlug)?.title ?? "—"}
-                      </div>
+                      <div className="font-medium">{t.page_slug ?? "—"}</div>
                     </td>
                     <td className="px-5 py-4">
-                      {t.status === "success" ? (
+                      {String(t.status ?? "").toLowerCase() === "success" ? (
                         <Badge variant="success">Success</Badge>
-                      ) : t.status === "failed" ? (
+                      ) : String(t.status ?? "").toLowerCase() === "failed" ? (
                         <Badge variant="danger">Failed</Badge>
                       ) : (
                         <Badge variant="warning">Pending</Badge>
                       )}
                     </td>
-                    <td className="px-5 py-4 text-zinc-700">{t.paymentMethod}</td>
-                    <td className="px-5 py-4 text-zinc-700">{t.glCode ?? "—"}</td>
+                    <td className="px-5 py-4 text-zinc-700">{t.payment_method ?? "—"}</td>
+                    <td className="px-5 py-4 text-zinc-700">{t.gl_code ?? "—"}</td>
                     <td className="px-5 py-4 text-right font-semibold text-zinc-900">
-                      {fmtMoney(t.amountCents)}
+                      {fmtMoney(
+                        typeof t.amount === "number"
+                          ? t.amount
+                          : typeof t.amount_cents === "number"
+                            ? t.amount_cents / 100
+                            : 0,
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -174,8 +280,15 @@ export default function ReportsUi() {
             <div className="mt-3 space-y-2 text-sm text-zinc-700">
               {Array.from(
                 tx.reduce((m, t) => {
-                  const k = t.glCode ?? "—";
-                  m.set(k, (m.get(k) ?? 0) + (t.status === "success" ? t.amountCents : 0));
+                  const k = t.gl_code ?? "—";
+                  const ok = String(t.status ?? "").toLowerCase() === "success";
+                  const amt =
+                    typeof t.amount === "number"
+                      ? t.amount
+                      : typeof t.amount_cents === "number"
+                        ? t.amount_cents / 100
+                        : 0;
+                  m.set(k, (m.get(k) ?? 0) + (ok ? amt : 0));
                   return m;
                 }, new Map<string, number>()),
               ).map(([k, v]) => (
@@ -191,7 +304,8 @@ export default function ReportsUi() {
             <div className="mt-3 space-y-2 text-sm text-zinc-700">
               {Array.from(
                 tx.reduce((m, t) => {
-                  m.set(t.paymentMethod, (m.get(t.paymentMethod) ?? 0) + 1);
+                  const k = t.payment_method ?? "unknown";
+                  m.set(k, (m.get(k) ?? 0) + 1);
                   return m;
                 }, new Map<string, number>()),
               ).map(([k, v]) => (

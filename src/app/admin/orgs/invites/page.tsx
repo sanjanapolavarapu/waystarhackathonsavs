@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { OrgSwitcher } from "@/components/org-switcher";
 import { getSupabaseClient } from "@/lib/supabase";
 import { getSelectedOrgId } from "@/lib/org";
 
@@ -18,6 +19,9 @@ export default function InviteCodesPage() {
 
   return (
     <div className="mx-auto w-full max-w-lg">
+      <div className="mb-4 flex justify-end">
+        <OrgSwitcher />
+      </div>
       <Card className="bg-white/80 backdrop-blur">
         <CardHeader>
           <div className="text-xl font-semibold tracking-tight text-zinc-900">Invite codes</div>
@@ -91,6 +95,11 @@ export default function InviteCodesPage() {
                 const orgId = getSelectedOrgId();
                 if (!supabase) {
                   setError("Supabase isn’t configured.");
+                  return;
+                }
+                const { data: sessionData } = await supabase.auth.getSession();
+                if (!sessionData.session) {
+                  setError("Your session expired. Please sign in again.");
                   return;
                 }
                 if (!orgId) {

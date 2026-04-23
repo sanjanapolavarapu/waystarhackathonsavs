@@ -51,7 +51,7 @@ export default function AdminLoginPage() {
         });
       }
 
-      router.replace("/");
+      router.replace("/admin/pages");
       router.refresh();
     } finally {
       setLoading(false);
