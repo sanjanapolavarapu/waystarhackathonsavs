@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 import { adminCookieName, createAdminSession } from "@/lib/admin-session";
 
@@ -9,14 +9,14 @@ async function upsertUserProfile({
   email,
   name,
 }: {
-  admin: ReturnType<typeof createClient>;
+  // NOTE: This route is intentionally untyped w.r.t. your Supabase schema.
+  // If you add generated `Database` types later, wire them in here.
+  admin: SupabaseClient<any>;
   userId: string;
   email: string;
   name: string;
 }) {
-  const res = await admin
-    .from("user_profiles")
-    .upsert(
+  const res = await admin.from("user_profiles").upsert(
       {
         id: userId,
         email,
@@ -52,7 +52,7 @@ export async function POST(req: Request) {
   // Preferred: service role can auto-confirm users for hackathons.
   const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (serviceRole) {
-    const admin = createClient(supabaseUrl, serviceRole);
+    const admin = createClient<any>(supabaseUrl, serviceRole);
     const created = await admin.auth.admin.createUser({
       email,
       password,
@@ -85,7 +85,7 @@ export async function POST(req: Request) {
     }
 
     // Immediately sign in via anon key to return a session.
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    const supabase = createClient<any>(supabaseUrl, supabaseAnonKey);
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error || !data.user) {
       return NextResponse.json(
@@ -112,7 +112,7 @@ export async function POST(req: Request) {
   }
 
   // Fallback: client signup (may require email confirmation depending on project settings).
-  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+  const supabase = createClient<any>(supabaseUrl, supabaseAnonKey);
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -128,7 +128,7 @@ export async function POST(req: Request) {
   }
 
   if (serviceRole && data.user?.id) {
-    const admin = createClient(supabaseUrl, serviceRole);
+    const admin = createClient<any>(supabaseUrl, serviceRole);
     const profileUpsertError = await upsertUserProfile({
       admin,
       userId: data.user.id,
