@@ -6,12 +6,12 @@ export default function Home() {
     <main className="min-h-screen bg-background text-foreground">
       <div className="relative isolate overflow-hidden">
         <div
-          className="absolute inset-0 -z-10 bg-center bg-cover opacity-35 dark:opacity-25"
+          className="absolute inset-0 -z-10 bg-center bg-cover opacity-20 dark:opacity-25"
           style={{ backgroundImage: "url(/hero-abstract.svg)" }}
         />
-        <div className="absolute inset-0 -z-10 bg-gradient-to-b from-white/60 via-white/30 to-background dark:from-black/40 dark:via-black/20" />
+        <div className="absolute inset-0 -z-10 bg-gradient-to-b from-white/85 via-white/65 to-background dark:from-black/40 dark:via-black/20" />
 
-        <header className="sticky top-0 z-20 border-b border-zinc-200/60 bg-white/50 backdrop-blur dark:border-zinc-800/60 dark:bg-zinc-950/40">
+        <header className="sticky top-0 z-20 border-b border-zinc-200/60 bg-white/75 backdrop-blur dark:border-zinc-800/60 dark:bg-zinc-950/40">
           <div className="mx-auto w-full max-w-[1240px] px-4 py-4 sm:px-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -30,7 +30,7 @@ export default function Home() {
                 <ThemeToggle className="h-10 w-10 px-0 rounded-lg border border-zinc-200 bg-white/60 backdrop-blur hover:bg-white dark:border-zinc-800 dark:bg-zinc-950/40 dark:hover:bg-zinc-950/60" />
                 <Link
                   href="/admin/login"
-                  className="h-10 px-4 inline-flex items-center justify-center rounded-lg border border-zinc-200 bg-white/80 backdrop-blur text-sm font-medium text-zinc-900 shadow-sm hover:bg-white dark:border-zinc-800 dark:bg-zinc-950/50 dark:text-zinc-100 dark:hover:bg-zinc-950/70"
+                  className="h-10 px-4 inline-flex items-center justify-center rounded-lg border border-zinc-200 bg-white text-sm font-medium text-zinc-900 shadow-sm hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950/50 dark:text-zinc-100 dark:hover:bg-zinc-950/70"
                 >
                   Log in
                 </Link>
@@ -48,7 +48,7 @@ export default function Home() {
         <section className="mx-auto w-full max-w-[1240px] px-4 pb-14 pt-10 sm:px-6 sm:pt-16">
           <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:items-center">
             <div className="text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white/70 px-4 py-2 text-xs font-medium text-zinc-700 shadow-sm backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/40 dark:text-zinc-200">
+              <div className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-xs font-medium text-zinc-700 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/40 dark:text-zinc-200">
                 Launch a payment page in minutes
                 <span className="h-1 w-1 rounded-full bg-zinc-300 dark:bg-zinc-700" />
                 No code
@@ -74,13 +74,13 @@ export default function Home() {
                 </Link>
                 <Link
                   href="/admin/pages"
-                className="w-full sm:w-auto h-11 px-6 inline-flex items-center justify-center rounded-xl border border-zinc-200 bg-white/80 backdrop-blur text-sm font-semibold text-zinc-900 shadow-sm hover:bg-white dark:border-zinc-800 dark:bg-zinc-950/50 dark:text-zinc-100 dark:hover:bg-zinc-950/70"
+                className="w-full sm:w-auto h-11 px-6 inline-flex items-center justify-center rounded-xl border border-zinc-200 bg-white text-sm font-semibold text-zinc-900 shadow-sm hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950/50 dark:text-zinc-100 dark:hover:bg-zinc-950/70"
                 >
                   Open dashboard
                 </Link>
               </div>
 
-              <div className="mt-8 rounded-3xl border border-zinc-200 bg-white/70 shadow-sm backdrop-blur p-6 dark:border-zinc-800 dark:bg-zinc-950/40">
+              <div className="mt-8 rounded-3xl border border-zinc-200 bg-white shadow-sm p-6 dark:border-zinc-800 dark:bg-zinc-950/40">
                 <blockquote className="text-lg sm:text-xl font-semibold text-zinc-900 leading-snug dark:text-zinc-50">
                   “The fastest way to turn an invoice into a paid receipt.”
                 </blockquote>
@@ -175,21 +175,21 @@ export default function Home() {
 
       <section className="mx-auto w-full max-w-[1240px] px-4 pb-20 sm:px-6">
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <div className="rounded-3xl border border-zinc-200 bg-white/80 backdrop-blur p-6 shadow-sm">
+          <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
             <div className="text-xs font-medium text-zinc-500">Step 1</div>
             <div className="mt-2 text-base font-semibold text-zinc-900">Create a page</div>
             <p className="mt-2 text-sm text-zinc-600">
               Choose a title, amount type, and fields you need for reconciliation.
             </p>
           </div>
-          <div className="rounded-3xl border border-zinc-200 bg-white/80 backdrop-blur p-6 shadow-sm">
+          <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
             <div className="text-xs font-medium text-zinc-500">Step 2</div>
             <div className="mt-2 text-base font-semibold text-zinc-900">Share the link</div>
             <p className="mt-2 text-sm text-zinc-600">
               Send a URL, embed it, or drop a QR on an invoice—works everywhere.
             </p>
           </div>
-          <div className="rounded-3xl border border-zinc-200 bg-white/80 backdrop-blur p-6 shadow-sm">
+          <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
             <div className="text-xs font-medium text-zinc-500">Step 3</div>
             <div className="mt-2 text-base font-semibold text-zinc-900">Get paid</div>
             <p className="mt-2 text-sm text-zinc-600">
@@ -199,7 +199,7 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="border-t border-zinc-200 bg-white/60">
+      <footer className="border-t border-zinc-200 bg-white/80">
         <div className="mx-auto w-full max-w-[1240px] px-4 py-8 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="text-xs text-zinc-500">© {new Date().getFullYear()} Quick Payment Pages</div>
           <div className="text-xs text-zinc-500">
