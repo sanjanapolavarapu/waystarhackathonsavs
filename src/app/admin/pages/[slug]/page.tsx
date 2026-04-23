@@ -244,9 +244,6 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
           <Link href="/admin/pages">
             <Button variant="secondary">Back</Button>
           </Link>
-          <Button variant="ghost" className="hover:bg-white/60">
-            Save draft
-          </Button>
           <Button variant="primary" onClick={handlePublish} disabled={saving || !glValidation.valid}>
             {saving ? "Saving..." : "Publish"}
           </Button>

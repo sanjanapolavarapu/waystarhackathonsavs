@@ -15,6 +15,7 @@ export default function AdminPagesList() {
   const [pages, setPages] = React.useState<PaymentPage[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [query, setQuery] = React.useState("");
 
   React.useEffect(() => {
     let cancelled = false;
@@ -39,6 +40,17 @@ export default function AdminPagesList() {
       cancelled = true;
     };
   }, []);
+
+  const filteredPages = React.useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return pages;
+    return pages.filter((p) => {
+      const title = String(p.title ?? "").toLowerCase();
+      const subtitle = String(p.subtitle ?? "").toLowerCase();
+      const slug = String(p.slug ?? "").toLowerCase();
+      return title.includes(q) || subtitle.includes(q) || slug.includes(q);
+    });
+  }, [pages, query]);
 
   return (
     <div className="space-y-4">
@@ -67,7 +79,12 @@ export default function AdminPagesList() {
           <div className="text-sm font-semibold text-zinc-900">All pages</div>
           <div className="relative w-full sm:w-[340px]">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
-            <Input placeholder="Search pages…" className="pl-10" />
+            <Input
+              placeholder="Search pages…"
+              className="pl-10"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -95,7 +112,14 @@ export default function AdminPagesList() {
                     </td>
                   </tr>
                 ) : null}
-                {pages.map((p) => (
+                {!loading && filteredPages.length === 0 ? (
+                  <tr className="bg-white/60">
+                    <td className="px-5 py-6 text-zinc-600" colSpan={5}>
+                      No matching pages.
+                    </td>
+                  </tr>
+                ) : null}
+                {filteredPages.map((p) => (
                   <tr key={p.id} className="bg-white/60">
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">

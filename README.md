@@ -140,11 +140,11 @@ See [`schema.sql`](./schema.sql) for the full schema.
 
 ```
 Email:    admin@demo.com
-Password: (set before demo)
+Password: (the Supabase Auth password you set for this user)
 ```
 
-**Hosted URL:** <!-- add before demo -->
-**Repo URL:** <!-- add before demo -->
+**Hosted URL:** `https://waystarhackathonsavs-2bb5.vercel.app/`
+**Repo URL:** `https://github.com/sanjanapolavarapu/waystarhackathonsavs`
 
 ---
 

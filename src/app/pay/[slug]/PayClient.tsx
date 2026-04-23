@@ -230,6 +230,7 @@ export function PayClient({
     return normalized.sort((a, b) => a.order - b.order);
   }, [fields]);
 
+  const [payerName, setPayerName] = React.useState("");
   const [payerEmail, setPayerEmail] = React.useState("");
   const [amountInput, setAmountInput] = React.useState<string>(() => {
     if (amountMode === "FIXED") return String((fixedAmountCents ?? 0) / 100);
@@ -312,6 +313,10 @@ export function PayClient({
   async function startPayment() {
     setStartError(null);
 
+    if (!payerName.trim()) {
+      setStartError("Please enter your name.");
+      return;
+    }
     if (!payerEmail.trim()) {
       setStartError("Please enter your email.");
       return;
@@ -330,12 +335,30 @@ export function PayClient({
 
     setIsStarting(true);
     try {
+      // Persist the payload so CheckoutForm can finalize /api/payments/complete after Stripe confirms.
+      try {
+        window.sessionStorage.setItem(
+          "qpp_pending_payment",
+          JSON.stringify({
+            pageSlug,
+            amount: resolvedAmountCents / 100,
+            payerName: payerName.trim(),
+            payerEmail: payerEmail.trim(),
+            paymentMethod: "card",
+            customResponses: fieldValues,
+          }),
+        );
+      } catch {
+        // ignore
+      }
+
       const res = await fetch("/api/create-payment-intent", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           pageSlug,
           amount: resolvedAmountCents,
+          payerName: payerName.trim(),
           payerEmail: payerEmail.trim(),
         }),
       });
@@ -388,6 +411,18 @@ export function PayClient({
         void startPayment();
       }}
     >
+      <div className="space-y-2">
+        <label className="text-xs font-medium text-zinc-600" htmlFor="payer_name">
+          Name <span className="text-red-600">*</span>
+        </label>
+        <Input
+          id="payer_name"
+          placeholder="Your name"
+          value={payerName}
+          onChange={(e) => setPayerName(e.target.value)}
+          required
+        />
+      </div>
       <div className="space-y-2">
         <label className="text-xs font-medium text-zinc-600" htmlFor="payer_email">
           Email <span className="text-red-600">*</span>

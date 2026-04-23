@@ -14,7 +14,7 @@ export async function POST(request) {
 
     const body = await request.json();
     // amount must be in CENTS (e.g., $25.00 = 2500)
-    const { amount, payerEmail, pageSlug } = body; 
+    const { amount, payerEmail, payerName, pageSlug } = body; 
 
     if (!Number.isFinite(amount) || amount <= 0) {
       return NextResponse.json({ error: 'Invalid amount.' }, { status: 400 });
@@ -29,6 +29,8 @@ export async function POST(request) {
       receipt_email: payerEmail, // Hits the email confirmation stretch goal!
       metadata: {
         payer_email: payerEmail ?? '',
+        payer_name: typeof payerName === "string" ? payerName : "",
+        page_slug: pageSlug ?? "",
       },
       automatic_payment_methods: {
         enabled: true,

@@ -153,10 +153,36 @@ export default function ReportsUi() {
     void (async () => {
       setLoading(true);
       setError(null);
-      const { data, error } = await supabase
+      // Some environments don't have `transactions.page_slug` yet.
+      // Try selecting it first, then gracefully fall back to joining `payment_pages(slug)`.
+      const primary = await supabase
         .from("transactions")
         .select("id, page_slug, created_at, status, payment_method, amount, amount_cents, payer_email, gl_code")
         .order("created_at", { ascending: false });
+
+      let data = primary.data as typeof tx | null;
+      let error = primary.error;
+
+      if (error && /page_slug/i.test(error.message)) {
+        const fallback = await supabase
+          .from("transactions")
+          .select(
+            "id, page_id, created_at, status, payment_method, amount, amount_cents, payer_email, gl_code, payment_pages:page_id ( slug )",
+          )
+          .order("created_at", { ascending: false });
+        error = fallback.error;
+        if (!error) {
+          data = ((fallback.data ?? []) as Array<
+            (typeof tx)[number] & {
+              page_id?: string | null;
+              payment_pages?: { slug?: string | null } | Array<{ slug?: string | null }> | null;
+            }
+          >).map((row) => {
+            const joined = Array.isArray(row.payment_pages) ? row.payment_pages[0] : row.payment_pages;
+            return { ...row, page_slug: joined?.slug ?? null };
+          }) as unknown as typeof tx;
+        }
+      }
 
       if (!mounted) return;
       if (error) {
