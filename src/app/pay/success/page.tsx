@@ -6,16 +6,6 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 export default function PaySuccessPage() {
   return (
-    <React.Suspense
-      fallback={<div className="min-h-screen bg-background text-foreground px-6 py-16" />}
-    >
-      <PaySuccessClient />
-    </React.Suspense>
-  );
-}
-
-function PaySuccessClient() {
-  return (
     <div className="min-h-screen bg-background text-foreground px-6 py-16">
       <div className="mx-auto w-full max-w-md">
         <Card className="bg-white/80 backdrop-blur dark:bg-zinc-950/30">
@@ -28,7 +18,7 @@ function PaySuccessClient() {
             </div>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
-            <Link href="/admin/pages">
+            <Link href="/">
               <Button variant="primary" className="w-full">
                 Back to dashboard
               </Button>
@@ -44,4 +34,3 @@ function PaySuccessClient() {
     </div>
   );
 }
-
