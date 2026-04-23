@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BarChart3, LayoutGrid } from "lucide-react";
@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 type Tab = {
   href: string;
   label: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
   isActive: (pathname: string) => boolean;
 };
 
@@ -104,4 +104,3 @@ export function TopTabsNav({
     </div>
   );
 }
-

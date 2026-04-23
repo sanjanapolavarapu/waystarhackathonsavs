@@ -6,9 +6,18 @@ import { ShieldCheck } from "lucide-react";
 
 import type { PaymentPage } from "@/lib/qpp-types";
 import { getPageBySlug } from "@/lib/mock-qpp";
+import { getSupabaseClient } from "@/lib/supabase";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PayClient } from "./PayClient";
+
+function detectDevice() {
+  if (typeof window === "undefined") return "desktop";
+  const w = window.innerWidth;
+  if (w < 768) return "mobile";
+  if (w < 1024) return "tablet";
+  return "desktop";
+}
 
 function fmtMoney(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
@@ -17,6 +26,22 @@ function fmtMoney(cents: number) {
 export function PublicPayClient({ slug }: { slug: string }) {
   const [page, setPage] = React.useState<PaymentPage | null>(() => getPageBySlug(slug));
   const [loadError, setLoadError] = React.useState<string | null>(null);
+  const [logoBroken, setLogoBroken] = React.useState(false);
+  const visitRowIdRef = React.useRef<string | null>(null);
+  const formStartedSentRef = React.useRef(false);
+
+  React.useEffect(() => {
+    setLogoBroken(false);
+  }, [page?.logoUrl]);
+
+  const markVisitFormStarted = React.useCallback(() => {
+    if (formStartedSentRef.current) return;
+    const visitId = visitRowIdRef.current;
+    const supabase = getSupabaseClient();
+    if (!visitId || !supabase) return;
+    formStartedSentRef.current = true;
+    void supabase.from("page_visits").update({ form_started: true }).eq("id", visitId);
+  }, []);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -45,6 +70,31 @@ export function PublicPayClient({ slug }: { slug: string }) {
       cancelled = true;
     };
   }, [slug]);
+
+  React.useEffect(() => {
+    if (!page?.id) return;
+    visitRowIdRef.current = null;
+    formStartedSentRef.current = false;
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
+    void (async () => {
+      try {
+        const { data, error } = await supabase
+          .from("page_visits")
+          .insert({
+            page_id: page.id,
+            page_slug: page.slug,
+            device: detectDevice(),
+            form_started: false,
+          })
+          .select("id")
+          .maybeSingle();
+        if (!error && data?.id) visitRowIdRef.current = data.id;
+      } catch {
+        /* silent */
+      }
+    })();
+  }, [page?.id, page?.slug]);
 
   if (!page) {
     return (
@@ -99,12 +149,21 @@ export function PublicPayClient({ slug }: { slug: string }) {
           </div>
         ) : null}
         <div className="flex flex-col items-center">
-          <div className="h-14 w-14 rounded-full border border-zinc-200 bg-white shadow-sm grid place-items-center">
-            <div
-              className="h-7 w-7 rounded-lg"
-              style={{ backgroundColor: page.brandColor }}
-              aria-hidden="true"
-            />
+          <div className="h-14 w-14 shrink-0 rounded-full border border-zinc-200 bg-white shadow-sm grid place-items-center overflow-hidden p-1.5">
+            {page.logoUrl && !logoBroken ? (
+              <img
+                src={page.logoUrl}
+                alt=""
+                className="h-full w-full object-contain"
+                onError={() => setLogoBroken(true)}
+              />
+            ) : (
+              <div
+                className="h-7 w-7 rounded-lg"
+                style={{ backgroundColor: page.brandColor }}
+                aria-hidden="true"
+              />
+            )}
           </div>
           <div className="mt-4 text-2xl font-semibold tracking-tight text-zinc-900 text-center">
             {page.title}
@@ -129,12 +188,14 @@ export function PublicPayClient({ slug }: { slug: string }) {
             ) : null}
 
             <PayClient
+              pageSlug={page.slug}
               pageTitle={page.title}
               amountMode={page.amountMode}
               fixedAmountCents={page.fixedAmountCents}
               minAmountCents={page.minAmountCents}
               maxAmountCents={page.maxAmountCents}
               fields={page.fields}
+              onFormStarted={markVisitFormStarted}
             />
 
             <div className="flex items-center justify-center gap-2 text-xs text-zinc-500">
