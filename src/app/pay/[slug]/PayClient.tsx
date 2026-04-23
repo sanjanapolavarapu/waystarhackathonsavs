@@ -328,6 +328,8 @@ export function PayClient({
       return;
     }
 
+    notifyFormStarted();
+
     setIsStarting(true);
     try {
       const res = await fetch("/api/create-payment-intent", {

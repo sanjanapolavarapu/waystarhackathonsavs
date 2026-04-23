@@ -84,6 +84,7 @@ export function PublicPayClient({ slug }: { slug: string }) {
           .insert({
             page_id: page.id,
             page_slug: page.slug,
+            organization_id: page.organizationId ?? null,
             device: detectDevice(),
             form_started: false,
           })

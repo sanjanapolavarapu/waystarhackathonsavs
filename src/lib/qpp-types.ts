@@ -17,6 +17,8 @@ export type PaymentPage = {
   id: string;
   slug: string;
   isActive: boolean;
+  /** Present when the row is loaded from Supabase (used for analytics / org scoping). */
+  organizationId?: string | null;
 
   title: string;
   subtitle?: string;
