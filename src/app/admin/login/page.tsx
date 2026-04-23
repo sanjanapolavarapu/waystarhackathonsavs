@@ -31,7 +31,7 @@ export default function AdminLoginPage() {
         setError("Invalid password.");
         return;
       }
-      router.replace("/admin/pages");
+      router.replace("/");
       router.refresh();
     } finally {
       setLoading(false);
