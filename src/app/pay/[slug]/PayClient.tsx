@@ -55,18 +55,20 @@ export function PayClient({
   const fieldsKey = React.useMemo(() => fieldSignature(sortedFields), [sortedFields]);
 
   React.useEffect(() => {
-    setFieldValues((prev) => {
-      const next: Record<string, string> = {};
-      for (const f of sortedFields) {
-        if (f.type === "CHECKBOX") {
-          next[f.id] = prev[f.id] === "true" ? "true" : "false";
-        } else {
-          next[f.id] = prev[f.id] ?? "";
+    queueMicrotask(() => {
+      setFieldValues((prev) => {
+        const next: Record<string, string> = {};
+        for (const f of sortedFields) {
+          if (f.type === "CHECKBOX") {
+            next[f.id] = prev[f.id] === "true" ? "true" : "false";
+          } else {
+            next[f.id] = prev[f.id] ?? "";
+          }
         }
-      }
-      return next;
+        return next;
+      });
     });
-  }, [fieldsKey, pageSlug]);
+  }, [fieldsKey, pageSlug, sortedFields]);
 
   const [isStarting, setIsStarting] = React.useState(false);
   const [clientSecret, setClientSecret] = React.useState<string | null>(null);

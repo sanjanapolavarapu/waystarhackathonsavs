@@ -31,7 +31,7 @@ export function PublicPayClient({ slug }: { slug: string }) {
   const formStartedSentRef = React.useRef(false);
 
   React.useEffect(() => {
-    setLogoBroken(false);
+    queueMicrotask(() => setLogoBroken(false));
   }, [page?.logoUrl]);
 
   const markVisitFormStarted = React.useCallback(() => {

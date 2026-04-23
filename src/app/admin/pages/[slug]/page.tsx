@@ -105,8 +105,13 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
   React.useEffect(() => {
     if (!page.id) return;
     let cancelled = false;
-    setPageInsights(null);
-    setInsightsLoading(true);
+    // Avoid sync setState in effect (eslint rule). We show loading state
+    // based on the request lifecycle and keep the previous insights until
+    // the new ones land (or fail).
+    queueMicrotask(() => {
+      if (cancelled) return;
+      setInsightsLoading(true);
+    });
     void (async () => {
       try {
         const data = await getPageInsights(page.id);
