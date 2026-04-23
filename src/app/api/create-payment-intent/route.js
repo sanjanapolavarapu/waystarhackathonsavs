@@ -29,7 +29,6 @@ export async function POST(request) {
       receipt_email: payerEmail, // Hits the email confirmation stretch goal!
       metadata: {
         payer_email: payerEmail ?? '',
-        page_slug: pageSlug ?? '',
       },
       automatic_payment_methods: {
         enabled: true,
