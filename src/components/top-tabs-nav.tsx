@@ -46,7 +46,7 @@ export function TopTabsNav({
           <div className="h-5 w-5 rounded-lg bg-indigo-600" />
         </div>
         <div>
-          <div className="text-sm font-semibold text-zinc-900 tracking-tight dark:text-zinc-100">
+          <div className="text-sm font-semibold text-black tracking-tight dark:text-white">
             Quick Payment Pages
           </div>
           <div className="text-xs text-zinc-500 dark:text-zinc-300">{subtitle}</div>
