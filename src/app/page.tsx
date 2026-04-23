@@ -153,20 +153,20 @@ export default function Home() {
         <div className="rounded-[36px] border border-zinc-200 bg-white/75 backdrop-blur p-6 shadow-sm sm:p-10 dark:border-zinc-800 dark:bg-zinc-950/30">
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <div>
-              <div className="text-sm font-semibold text-zinc-900">Branded checkout</div>
-              <p className="mt-2 text-sm text-zinc-600">
+              <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Branded checkout</div>
+              <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
                 Match your colors, add a logo, and keep payers confident they’re in the right place.
               </p>
             </div>
             <div>
-              <div className="text-sm font-semibold text-zinc-900">Flexible amounts</div>
-              <p className="mt-2 text-sm text-zinc-600">
+              <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Flexible amounts</div>
+              <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
                 Fixed price, min/max range, or payer-entered. Perfect for services and donations.
               </p>
             </div>
             <div>
-              <div className="text-sm font-semibold text-zinc-900">Share anywhere</div>
-              <p className="mt-2 text-sm text-zinc-600">
+              <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Share anywhere</div>
+              <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
                 Send a link, embed an iframe, or print a QR code for in-person payments.
               </p>
             </div>
@@ -177,23 +177,23 @@ export default function Home() {
       <section className="mx-auto w-full max-w-[1240px] px-4 pb-20 sm:px-6">
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <div className="rounded-3xl border border-zinc-200 bg-white/80 backdrop-blur p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/30">
-            <div className="text-xs font-medium text-zinc-500">Step 1</div>
-            <div className="mt-2 text-base font-semibold text-zinc-900">Create a page</div>
-            <p className="mt-2 text-sm text-zinc-600">
+            <div className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Step 1</div>
+            <div className="mt-2 text-base font-semibold text-zinc-900 dark:text-zinc-100">Create a page</div>
+            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
               Choose a title, amount type, and fields you need for reconciliation.
             </p>
           </div>
           <div className="rounded-3xl border border-zinc-200 bg-white/80 backdrop-blur p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/30">
-            <div className="text-xs font-medium text-zinc-500">Step 2</div>
-            <div className="mt-2 text-base font-semibold text-zinc-900">Share the link</div>
-            <p className="mt-2 text-sm text-zinc-600">
+            <div className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Step 2</div>
+            <div className="mt-2 text-base font-semibold text-zinc-900 dark:text-zinc-100">Share the link</div>
+            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
               Send a URL, embed it, or drop a QR on an invoice—works everywhere.
             </p>
           </div>
           <div className="rounded-3xl border border-zinc-200 bg-white/80 backdrop-blur p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/30">
-            <div className="text-xs font-medium text-zinc-500">Step 3</div>
-            <div className="mt-2 text-base font-semibold text-zinc-900">Get paid</div>
-            <p className="mt-2 text-sm text-zinc-600">
+            <div className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Step 3</div>
+            <div className="mt-2 text-base font-semibold text-zinc-900 dark:text-zinc-100">Get paid</div>
+            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
               Payments flow into your dashboard with the data you need.
             </p>
           </div>
