@@ -3,6 +3,31 @@ import { createClient } from "@supabase/supabase-js";
 
 import { adminCookieName, createAdminSession } from "@/lib/admin-session";
 
+async function upsertUserProfile({
+  admin,
+  userId,
+  email,
+  name,
+}: {
+  admin: ReturnType<typeof createClient>;
+  userId: string;
+  email: string;
+  name: string;
+}) {
+  const res = await admin
+    .from("user_profiles")
+    .upsert(
+      {
+        id: userId,
+        email,
+        full_name: name,
+      },
+      { onConflict: "id" },
+    );
+
+  if (res.error) throw new Error(res.error.message);
+}
+
 export async function POST(req: Request) {
   const body = (await req.json().catch(() => null)) as
     | { email?: string; password?: string; name?: string }
@@ -38,6 +63,24 @@ export async function POST(req: Request) {
       return NextResponse.json(
         { ok: false, error: "supabase_signup_failed", detail: created.error?.message || "createUser failed" },
         { status: 400 },
+      );
+    }
+
+    const profileUpsertError = await upsertUserProfile({
+      admin,
+      userId: created.data.user.id,
+      email,
+      name,
+    }).catch((e) => e);
+    if (profileUpsertError) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "profile_upsert_failed",
+          detail:
+            profileUpsertError instanceof Error ? profileUpsertError.message : String(profileUpsertError),
+        },
+        { status: 500 },
       );
     }
 
@@ -82,6 +125,27 @@ export async function POST(req: Request) {
       { ok: false, error: "supabase_signup_failed", detail: error.message },
       { status: 400 },
     );
+  }
+
+  if (serviceRole && data.user?.id) {
+    const admin = createClient(supabaseUrl, serviceRole);
+    const profileUpsertError = await upsertUserProfile({
+      admin,
+      userId: data.user.id,
+      email,
+      name,
+    }).catch((e) => e);
+    if (profileUpsertError) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "profile_upsert_failed",
+          detail:
+            profileUpsertError instanceof Error ? profileUpsertError.message : String(profileUpsertError),
+        },
+        { status: 500 },
+      );
+    }
   }
 
   // If a session is returned, treat the user as logged in.

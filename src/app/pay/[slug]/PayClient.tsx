@@ -6,18 +6,201 @@ import PaymentWrapper from "@/components/PaymentWrapper";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import type { CustomField } from "@/lib/qpp-types";
-
-type AmountMode = "FIXED" | "RANGE" | "USER_ENTERED";
+import type { CustomFieldType } from "@/lib/qpp-types";
 
 const selectClassName =
   "h-11 w-full appearance-none rounded-xl border border-zinc-200 bg-white px-4 text-sm text-zinc-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500";
 
-function fieldSignature(fields: CustomField[]) {
+type AmountMode = "FIXED" | "RANGE" | "USER_ENTERED";
+
+/**
+ * Public pay form field payload. The API and mock data must send `type` (and
+ * `options` for DROPDOWN); unknown shapes are normalized when rendering.
+ */
+export type PayField = {
+  id: string;
+  label: string;
+  type: CustomFieldType;
+  required: boolean;
+  order: number;
+  placeholder?: string;
+  helperText?: string;
+  /** Used when `type` is `"DROPDOWN"`. */
+  options?: string[];
+};
+
+function normalizePayField(raw: unknown): PayField | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  const id = typeof r.id === "string" ? r.id : null;
+  const label = typeof r.label === "string" ? r.label : null;
+  const order = typeof r.order === "number" ? r.order : 0;
+  if (!id || label === null) return null;
+
+  const allowed: CustomFieldType[] = ["TEXT", "NUMBER", "DROPDOWN", "DATE", "CHECKBOX"];
+  const t = r.type;
+  const type: CustomFieldType =
+    typeof t === "string" && (allowed as string[]).includes(t) ? (t as CustomFieldType) : "TEXT";
+
+  const required = Boolean(r.required);
+  const placeholder = typeof r.placeholder === "string" ? r.placeholder : undefined;
+  const helperText = typeof r.helperText === "string" ? r.helperText : undefined;
+
+  let options: string[] | undefined;
+  if (Array.isArray(r.options)) {
+    options = r.options.map(String).filter(Boolean);
+  }
+
+  return { id, label, type, required, order, placeholder, helperText, options };
+}
+
+function fieldSignature(fields: PayField[]) {
   return fields
-    .map((f) => `${f.id}:${f.type}:${f.order}:${f.required ? 1 : 0}`)
+    .map((f) => `${f.id}:${f.type}:${f.order}:${f.required ? 1 : 0}:${(f.options ?? []).join(",")}`)
     .sort()
     .join("|");
+}
+
+function PayFieldControl({
+  field: f,
+  value,
+  onChange,
+  onInteract,
+}: {
+  field: PayField;
+  value: string;
+  onChange: (next: string) => void;
+  onInteract: () => void;
+}) {
+  const helper = f.helperText ? (
+    <div className="text-xs text-zinc-500">{f.helperText}</div>
+  ) : null;
+
+  switch (f.type) {
+    case "CHECKBOX":
+      return (
+        <div className="flex items-start gap-3 rounded-xl border border-zinc-100 bg-zinc-50/60 px-3 py-3">
+          <input
+            type="checkbox"
+            id={f.id}
+            className="mt-0.5 h-4 w-4 shrink-0 rounded border-zinc-300 text-indigo-600 focus:ring-2 focus:ring-indigo-500/30"
+            checked={value === "true"}
+            onChange={(e) => {
+              onInteract();
+              onChange(e.target.checked ? "true" : "false");
+            }}
+          />
+          <div className="min-w-0 space-y-1">
+            <label htmlFor={f.id} className="text-sm font-medium text-zinc-800 leading-snug cursor-pointer">
+              {f.label} {f.required ? <span className="text-red-600">*</span> : null}
+            </label>
+            {helper}
+          </div>
+        </div>
+      );
+
+    case "DROPDOWN": {
+      const opts = f.options ?? [];
+      return (
+        <div className="space-y-2">
+          <label className="text-xs font-medium text-zinc-600" htmlFor={f.id}>
+            {f.label} {f.required ? <span className="text-red-600">*</span> : null}
+          </label>
+          <select
+            id={f.id}
+            className={cn(selectClassName, !value && "text-zinc-400")}
+            value={value}
+            onFocus={onInteract}
+            onChange={(e) => {
+              onInteract();
+              onChange(e.target.value);
+            }}
+            required={f.required}
+            aria-required={f.required}
+          >
+            <option value="">{f.placeholder?.trim() || "Select an option"}</option>
+            {opts.map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))}
+          </select>
+          {helper}
+        </div>
+      );
+    }
+
+    case "DATE":
+      return (
+        <div className="space-y-2">
+          <label className="text-xs font-medium text-zinc-600" htmlFor={f.id}>
+            {f.label} {f.required ? <span className="text-red-600">*</span> : null}
+          </label>
+          <Input
+            id={f.id}
+            type="date"
+            value={value}
+            onFocus={onInteract}
+            onChange={(e) => {
+              onInteract();
+              onChange(e.target.value);
+            }}
+            required={f.required}
+            aria-required={f.required}
+          />
+          {helper}
+        </div>
+      );
+
+    case "NUMBER":
+      return (
+        <div className="space-y-2">
+          <label className="text-xs font-medium text-zinc-600" htmlFor={f.id}>
+            {f.label} {f.required ? <span className="text-red-600">*</span> : null}
+          </label>
+          <Input
+            id={f.id}
+            type="number"
+            inputMode="decimal"
+            step="any"
+            placeholder={f.placeholder || ""}
+            value={value}
+            onFocus={onInteract}
+            onChange={(e) => {
+              onInteract();
+              onChange(e.target.value);
+            }}
+            required={f.required}
+            aria-required={f.required}
+          />
+          {helper}
+        </div>
+      );
+
+    case "TEXT":
+    default:
+      return (
+        <div className="space-y-2">
+          <label className="text-xs font-medium text-zinc-600" htmlFor={f.id}>
+            {f.label} {f.required ? <span className="text-red-600">*</span> : null}
+          </label>
+          <Input
+            id={f.id}
+            type="text"
+            placeholder={f.placeholder || ""}
+            value={value}
+            onFocus={onInteract}
+            onChange={(e) => {
+              onInteract();
+              onChange(e.target.value);
+            }}
+            required={f.required}
+            aria-required={f.required}
+          />
+          {helper}
+        </div>
+      );
+  }
 }
 
 export function PayClient({
@@ -36,13 +219,16 @@ export function PayClient({
   fixedAmountCents?: number | null;
   minAmountCents?: number | null;
   maxAmountCents?: number | null;
-  fields: CustomField[];
+  /** Accepts `CustomField[]` from the page loader; each row is normalized to `PayField`. */
+  fields: PayField[];
   onFormStarted?: () => void;
 }) {
-  const sortedFields = React.useMemo(
-    () => [...fields].sort((a, b) => a.order - b.order),
-    [fields],
-  );
+  const sortedFields = React.useMemo(() => {
+    const normalized = (fields ?? [])
+      .map((raw) => normalizePayField(raw))
+      .filter((f): f is PayField => Boolean(f));
+    return normalized.sort((a, b) => a.order - b.order);
+  }, [fields]);
 
   const [payerEmail, setPayerEmail] = React.useState("");
   const [amountInput, setAmountInput] = React.useState<string>(() => {
@@ -238,89 +424,15 @@ export function PayClient({
         </div>
       ) : null}
 
-      {sortedFields.map((f) => {
-        const value = fieldValues[f.id] ?? "";
-
-        if (f.type === "CHECKBOX") {
-          return (
-            <div key={f.id} className="flex items-start gap-3 rounded-xl border border-zinc-100 bg-zinc-50/60 px-3 py-3">
-              <input
-                type="checkbox"
-                id={f.id}
-                className="mt-0.5 h-4 w-4 shrink-0 rounded border-zinc-300 text-indigo-600 focus:ring-2 focus:ring-indigo-500/30"
-                checked={value === "true"}
-                onChange={(e) => {
-                  notifyFormStarted();
-                  setField(f.id, e.target.checked ? "true" : "false");
-                }}
-              />
-              <div className="min-w-0 space-y-1">
-                <label htmlFor={f.id} className="text-sm font-medium text-zinc-800 leading-snug cursor-pointer">
-                  {f.label} {f.required ? <span className="text-red-600">*</span> : null}
-                </label>
-                {f.helperText ? <div className="text-xs text-zinc-500">{f.helperText}</div> : null}
-              </div>
-            </div>
-          );
-        }
-
-        return (
-          <div key={f.id} className="space-y-2">
-            <label className="text-xs font-medium text-zinc-600" htmlFor={f.id}>
-              {f.label} {f.required ? <span className="text-red-600">*</span> : null}
-            </label>
-            {f.type === "DROPDOWN" ? (
-              <select
-                id={f.id}
-                className={cn(selectClassName, !value && "text-zinc-400")}
-                value={value}
-                onChange={(e) => setField(f.id, e.target.value)}
-                required={f.required}
-                aria-required={f.required}
-              >
-                <option value="">{f.placeholder?.trim() || "Select an option"}</option>
-                {(f.options ?? []).map((opt) => (
-                  <option key={opt} value={opt}>
-                    {opt}
-                  </option>
-                ))}
-              </select>
-            ) : f.type === "DATE" ? (
-              <Input
-                id={f.id}
-                type="date"
-                value={value}
-                onChange={(e) => setField(f.id, e.target.value)}
-                required={f.required}
-                aria-required={f.required}
-              />
-            ) : f.type === "NUMBER" ? (
-              <Input
-                id={f.id}
-                type="number"
-                inputMode="decimal"
-                step="any"
-                placeholder={f.placeholder || ""}
-                value={value}
-                onChange={(e) => setField(f.id, e.target.value)}
-                required={f.required}
-                aria-required={f.required}
-              />
-            ) : (
-              <Input
-                id={f.id}
-                type="text"
-                placeholder={f.placeholder || ""}
-                value={value}
-                onChange={(e) => setField(f.id, e.target.value)}
-                required={f.required}
-                aria-required={f.required}
-              />
-            )}
-            {f.helperText ? <div className="text-xs text-zinc-500">{f.helperText}</div> : null}
-          </div>
-        );
-      })}
+      {sortedFields.map((f) => (
+        <PayFieldControl
+          key={f.id}
+          field={f}
+          value={fieldValues[f.id] ?? ""}
+          onChange={(next) => setField(f.id, next)}
+          onInteract={notifyFormStarted}
+        />
+      ))}
 
       <Button variant="primary" className="w-full" type="submit" disabled={isStarting}>
         {isStarting ? "Starting…" : "Continue to payment"}

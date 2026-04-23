@@ -208,7 +208,8 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
     setSaveError(null);
 
     try {
-      await savePage(page);
+      const saved = await savePage(page);
+      setPage(structuredClone(saved));
       setSaveSuccess("Page saved successfully.");
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : "Failed to save page.");
