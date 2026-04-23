@@ -1,14 +1,37 @@
+"use client";
+
+import * as React from "react";
 import Link from "next/link";
 import { Plus, Search } from "lucide-react";
 
-import { listPages } from "@/lib/mock-qpp";
+import { listPages } from "@/lib/db";
+import type { PaymentPage } from "@/lib/qpp-types";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 
 export default function AdminPagesList() {
-  const pages = listPages();
+  const [pages, setPages] = React.useState<PaymentPage[]>([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    let cancelled = false;
+
+    async function loadPages() {
+      try {
+        const data = await listPages();
+        if (!cancelled) setPages(data);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    void loadPages();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div className="space-y-4">
@@ -53,6 +76,13 @@ export default function AdminPagesList() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-200">
+                {loading ? (
+                  <tr className="bg-white/60">
+                    <td className="px-5 py-6 text-zinc-600" colSpan={5}>
+                      Loading...
+                    </td>
+                  </tr>
+                ) : null}
                 {pages.map((p) => (
                   <tr key={p.id} className="bg-white/60">
                     <td className="px-5 py-4">
