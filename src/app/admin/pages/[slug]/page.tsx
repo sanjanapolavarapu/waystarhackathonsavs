@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import * as React from "react";
@@ -15,6 +14,7 @@ import {
 } from "lucide-react";
 
 import { getPageBySlug } from "@/lib/mock-qpp";
+import { validateGlCodes } from "@/lib/gl-code";
 import type { PaymentPage } from "@/lib/qpp-types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -28,6 +28,7 @@ const BRAND_COLORS = ["#0EA5E9", "#06B6D4", "#10B981", "#3B82F6", "#8B5CF6", "#F
 export default function AdminPageEditor({ params }: { params: { slug: string } }) {
   const initial = getPageBySlug(params.slug) ?? getPageBySlug("telehealth-consult");
   const [page, setPage] = React.useState<PaymentPage>(() => structuredClone(initial!));
+  const glValidation = validateGlCodes(page.glCodes);
 
   const amountModeUi: "fixed" | "range" | "custom" =
     page.amountMode === "FIXED"
@@ -67,7 +68,9 @@ export default function AdminPageEditor({ params }: { params: { slug: string } }
           <Button variant="ghost" className="hover:bg-white/60">
             Save draft
           </Button>
-          <Button variant="primary">Publish</Button>
+          <Button variant="primary" disabled={!glValidation.valid}>
+            Publish
+          </Button>
         </div>
       </div>
 
@@ -316,8 +319,18 @@ export default function AdminPageEditor({ params }: { params: { slug: string } }
                           .filter(Boolean),
                       }))
                     }
-                    placeholder="e.g., GL-1001, GL-1002"
+                    placeholder="e.g., 100-5000, 200-1100"
                   />
+                  {!glValidation.valid ? (
+                    <div className="text-xs text-red-600">
+                      Invalid GL codes: {glValidation.invalid.join(", ")}. Expected format:{" "}
+                      <span className="font-mono">XXX-XXXX</span>
+                    </div>
+                  ) : (
+                    <div className="text-xs text-zinc-500">
+                      Format: <span className="font-mono">XXX-XXXX</span> (example: 100-5000)
+                    </div>
+                  )}
                 </div>
               </Section>
 
@@ -517,9 +530,6 @@ function QRCodePanel({ url, title }: { url: string; title: string }) {
 
   React.useEffect(() => {
     let cancelled = false;
-    setError(null);
-    setPngDataUrl(null);
-    setSvg(null);
 
     void (async () => {
       try {
