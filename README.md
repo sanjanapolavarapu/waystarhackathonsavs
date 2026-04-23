@@ -69,6 +69,11 @@ RESEND_API_KEY=
 
 # App
 NEXT_PUBLIC_BASE_URL=
+
+# Optional (seed)
+SEED_ADMIN_EMAIL=
+SEED_ADMIN_PASSWORD=
+SEED_PAGE_SLUG=demo
 ```
 
 ---
@@ -87,8 +92,8 @@ npm install
 cp .env.example .env.local
 # Fill in your values in .env.local
 
-# 4. Run database migrations
-# (add migration command here)
+# 4. Seed demo data (Supabase)
+npm run seed
 
 # 5. Run the development server
 npm run dev
