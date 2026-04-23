@@ -14,6 +14,13 @@ function toTxStatus(stripeStatus, eventType) {
   return 'unknown';
 }
 
+function paymentMethodLabel(paymentIntent) {
+  const types = paymentIntent.payment_method_types;
+  if (Array.isArray(types) && types.length) return types.join('+');
+  if (paymentIntent.payment_method) return 'card';
+  return null;
+}
+
 export async function POST(req) {
   const stripe = getStripeServer();
   if (!stripe) {
@@ -24,47 +31,70 @@ export async function POST(req) {
   }
 
   const body = await req.text();
-  
-  // FIX: Await the headers before calling .get()
+
   const headerList = await headers();
   const sig = headerList.get('stripe-signature');
 
   let event;
 
   try {
-    // Verify that the event actually came from Stripe
     event = stripe.webhooks.constructEvent(body, sig, endpointSecret);
   } catch (err) {
     console.error(`❌ Webhook Error: ${err.message}`);
     return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 });
   }
 
-  // Update Supabase transaction status based on Stripe event.
-  // Note: We only rely on the PaymentIntent id; the row is created during
-  // /api/create-payment-intent, and then finalized here.
   if (event.type.startsWith('payment_intent.')) {
     const paymentIntent = event.data.object;
     const txStatus = toTxStatus(paymentIntent.status, event.type);
     const amountDollars = paymentIntent.amount ? paymentIntent.amount / 100 : null;
+    const meta = paymentIntent.metadata || {};
+    const organization_id = meta.organization_id || null;
+    let page_id = meta.page_id || null;
+    const page_slug_meta = meta.page_slug || null;
 
     const supabaseAdmin = getSupabaseAdmin();
+    if (supabaseAdmin && !page_id && page_slug_meta) {
+      const { data: pr } = await supabaseAdmin
+        .from('payment_pages')
+        .select('id')
+        .eq('slug', page_slug_meta)
+        .maybeSingle();
+      page_id = pr?.id ? String(pr.id) : null;
+    }
+
+    const payer_email =
+      (meta.payer_email && String(meta.payer_email).trim()) ||
+      paymentIntent.receipt_email ||
+      null;
+    const pm = paymentMethodLabel(paymentIntent);
+
     if (supabaseAdmin) {
+      const updatePayload = {
+        status: txStatus,
+        ...(amountDollars != null ? { amount: amountDollars } : {}),
+        ...(pm ? { payment_method: pm } : {}),
+        ...(organization_id ? { organization_id } : {}),
+        ...(page_id ? { page_id } : {}),
+        ...(payer_email ? { payer_email } : {}),
+      };
+
       const update = await supabaseAdmin
         .from('transactions')
-        .update({
-          status: txStatus,
-          ...(amountDollars != null ? { amount: amountDollars } : {}),
-        })
+        .update(updatePayload)
         .eq('stripe_payment_intent_id', paymentIntent.id);
 
       if (update.error) {
-        // If the schema doesn't have stripe_payment_intent_id yet, fall back to inserting
-        // a minimal row so analytics still reflect succeeded payments.
         console.error('Supabase update error:', update.error);
         if (event.type === 'payment_intent.succeeded') {
           const fallback = await supabaseAdmin.from('transactions').insert({
+            stripe_payment_intent_id: paymentIntent.id,
             amount: amountDollars ?? 0,
             status: txStatus,
+            organization_id: organization_id || null,
+            page_id: page_id || null,
+            payer_email,
+            payment_method: pm,
           });
           if (fallback.error) console.error('Supabase fallback insert error:', fallback.error);
         }

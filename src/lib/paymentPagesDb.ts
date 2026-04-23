@@ -18,6 +18,7 @@ export function fromPaymentPagesRow(row: AnyRow): PaymentPage | null {
 
   const id = pick<string>(row, ["id"]) ?? slug;
   const isActive = pick<boolean>(row, ["is_active", "isActive"]) ?? true;
+  const organizationId = pick<string>(row, ["organization_id", "organizationId"]) ?? null;
 
   const title = pick<string>(row, ["title"]) ?? slug;
   const subtitle = pick<string>(row, ["subtitle"]) ?? pick<string>(row, ["description"]);
@@ -72,6 +73,7 @@ export function fromPaymentPagesRow(row: AnyRow): PaymentPage | null {
     id,
     slug,
     isActive,
+    organizationId,
     title,
     subtitle,
     brandColor,
