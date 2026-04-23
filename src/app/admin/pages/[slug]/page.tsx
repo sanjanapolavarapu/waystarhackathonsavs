@@ -23,6 +23,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Segmented } from "@/components/ui/segmented";
 import { Badge } from "@/components/ui/badge";
+import { buildPublicPayUrl, getPublicBaseUrl } from "@/lib/public-url";
 import { cn } from "@/lib/utils";
 
 const BRAND_COLORS = ["#0EA5E9", "#06B6D4", "#10B981", "#3B82F6", "#8B5CF6", "#F97316"];
@@ -133,7 +134,7 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
         ? "range"
         : "custom";
 
-  const publicUrl = `https://yourdomain.com/pay/${page.slug}`;
+  const publicUrl = buildPublicPayUrl(page.slug);
   const iframeSnippet = `<iframe src="${publicUrl}" style="width:100%;max-width:480px;border:0;border-radius:16px;overflow:hidden" height="740" title="${page.title}"></iframe>`;
 
   function setAmountMode(next: "fixed" | "range" | "custom") {
@@ -1260,6 +1261,8 @@ function PreviewShell({
   urlPath: string;
   children: React.ReactNode;
 }) {
+  const baseUrl = getPublicBaseUrl();
+  const displayHost = baseUrl ? baseUrl.replace(/^https?:\/\//i, "") : "localhost";
   return (
     <div className="rounded-[28px] border border-zinc-200/80 bg-white/75 backdrop-blur p-4 shadow-[0_20px_60px_-30px_rgba(2,6,23,0.22)]">
       <div className="flex items-center justify-between rounded-2xl bg-zinc-50/80 border border-zinc-200 px-3 py-2 text-xs text-zinc-700">
@@ -1270,7 +1273,7 @@ function PreviewShell({
             <div className="h-2.5 w-2.5 rounded-full bg-green-400/90" />
           </div>
           <div className="ml-2 rounded-lg bg-white/70 border border-zinc-200 px-2 py-1 text-[11px] text-zinc-600">
-            yourdomain.com{urlPath}
+            {displayHost}{urlPath}
           </div>
         </div>
         <div
