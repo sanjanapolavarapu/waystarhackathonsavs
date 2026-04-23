@@ -10,11 +10,7 @@ import { getSelectedOrgId } from "@/lib/org";
 
 export function OrgRequiredModal() {
   const pathname = usePathname() ?? "";
-  const [orgSelected, setOrgSelected] = React.useState<boolean>(true);
-
-  React.useEffect(() => {
-    setOrgSelected(Boolean(getSelectedOrgId()));
-  }, [pathname]);
+  const orgSelected = Boolean(getSelectedOrgId());
 
   const isAdmin = pathname.startsWith("/admin");
   const isAuth = pathname === "/admin/login" || pathname === "/admin/signup";

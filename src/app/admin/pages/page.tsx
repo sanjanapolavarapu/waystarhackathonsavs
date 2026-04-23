@@ -16,15 +16,11 @@ export default function AdminPagesList() {
   const [pages, setPages] = React.useState<PaymentPage[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
-  const [orgSelected, setOrgSelected] = React.useState(true);
+  const orgSelected = Boolean(getSelectedOrgId());
 
   React.useEffect(() => {
     let cancelled = false;
-    const selected = Boolean(getSelectedOrgId());
-    setOrgSelected(selected);
-    if (!selected) {
-      setLoading(false);
-      setPages([]);
+    if (!orgSelected) {
       return () => {
         cancelled = true;
       };
@@ -49,7 +45,10 @@ export default function AdminPagesList() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [orgSelected]);
+
+  const isLoading = orgSelected ? loading : false;
+  const visiblePages = orgSelected ? pages : [];
 
   return (
     <div className="space-y-4">
@@ -120,14 +119,14 @@ export default function AdminPagesList() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-200">
-                {loading ? (
+                {isLoading ? (
                   <tr className="bg-white/60">
                     <td className="px-5 py-6 text-zinc-600" colSpan={5}>
                       Loading...
                     </td>
                   </tr>
                 ) : null}
-                {pages.map((p) => (
+                {visiblePages.map((p) => (
                   <tr key={p.id} className="bg-white/60">
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
