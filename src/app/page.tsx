@@ -38,7 +38,7 @@ const BRAND_COLORS = [
 const STATS = [
   { label: "Active Pages", value: "24", delta: "+5 this week", icon: LayoutGrid },
   {
-    label: "Patient Payments",
+    label: "Payments",
     value: "2,847",
     delta: "+22% from last month",
     icon: BarChart3,
@@ -49,23 +49,23 @@ const STATS = [
     delta: "+28% from last month",
     icon: Copy,
   },
-  { label: "Avg. Co-Pay", value: "$64.75", delta: "Across all providers", icon: Settings2 },
+  { label: "Avg. Payment", value: "$64.75", delta: "Across all pages", icon: Settings2 },
 ];
 
 export default function Home() {
   const [brandColor, setBrandColor] = React.useState(BRAND_COLORS[0]);
-  const [pageTitle, setPageTitle] = React.useState("Telehealth Consultation Fee");
+  const [pageTitle, setPageTitle] = React.useState("Consulting Session");
   const [subtitle, setSubtitle] = React.useState(
-    "Secure payment for your virtual healthcare visit",
+    "A fast, reusable payment link for any business",
   );
   const [amountMode, setAmountMode] = React.useState<"fixed" | "range" | "custom">(
     "fixed",
   );
   const [fixedAmount, setFixedAmount] = React.useState("89");
   const [customFields, setCustomFields] = React.useState<CustomField[]>([
-    { id: "patientName", label: "Patient Name", type: "Text" },
-    { id: "dob", label: "Date of Birth", type: "Date" },
-    { id: "insurance", label: "Insurance Provider", type: "Text" },
+    { id: "name", label: "Full Name", type: "Text" },
+    { id: "serviceDate", label: "Service Date", type: "Date" },
+    { id: "reference", label: "Reference ID", type: "Text" },
   ]);
 
   function addField() {
@@ -80,7 +80,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(1200px_600px_at_15%_20%,rgba(14,165,233,0.14),transparent_60%),radial-gradient(900px_500px_at_90%_10%,rgba(16,185,129,0.12),transparent_55%)]">
+    <div className="min-h-screen bg-[#fbfbff] bg-[radial-gradient(1200px_600px_at_15%_20%,rgba(99,102,241,0.14),transparent_60%),radial-gradient(900px_500px_at_90%_10%,rgba(217,70,239,0.12),transparent_55%)]">
       <div className="mx-auto w-full max-w-[1240px] px-4 py-6 sm:px-6">
         <TopNav />
 
@@ -99,7 +99,7 @@ export default function Home() {
                     Configure Your Payment Page
                   </div>
                   <div className="mt-1 text-sm text-zinc-500">
-                    Customize it for your medical practice
+                    Customize it for your organization
                   </div>
                 </div>
                 <Button
@@ -113,7 +113,7 @@ export default function Home() {
                 <Section
                   title="Branding & Style"
                   icon={
-                    <div className="h-9 w-9 rounded-2xl bg-sky-50 border border-sky-100 grid place-items-center text-sky-700 font-semibold">
+                    <div className="h-9 w-9 rounded-2xl bg-indigo-50 border border-indigo-100 grid place-items-center text-indigo-700 font-semibold">
                       C
                     </div>
                   }
@@ -131,7 +131,7 @@ export default function Home() {
                           className={cn(
                             "h-9 w-14 rounded-2xl border transition-all hover:-translate-y-[1px]",
                             c === brandColor
-                              ? "border-zinc-900/10 ring-2 ring-sky-500/30 shadow-sm"
+                              ? "border-zinc-900/10 ring-2 ring-indigo-500/30 shadow-sm"
                               : "border-white/50 shadow-sm hover:shadow-md",
                           )}
                           style={{ backgroundColor: c }}
@@ -155,7 +155,7 @@ export default function Home() {
                 <Section
                   title="Page Content"
                   icon={
-                    <div className="h-9 w-9 rounded-2xl bg-emerald-50 border border-emerald-100 grid place-items-center text-emerald-700 font-semibold">
+                    <div className="h-9 w-9 rounded-2xl bg-fuchsia-50 border border-fuchsia-100 grid place-items-center text-fuchsia-700 font-semibold">
                       T
                     </div>
                   }
@@ -179,7 +179,7 @@ export default function Home() {
                 <Section
                   title="Payment Amount"
                   icon={
-                    <div className="h-9 w-9 rounded-2xl bg-sky-50 border border-sky-100 grid place-items-center text-sky-700 font-semibold">
+                    <div className="h-9 w-9 rounded-2xl bg-indigo-50 border border-indigo-100 grid place-items-center text-indigo-700 font-semibold">
                       $
                     </div>
                   }
@@ -209,10 +209,10 @@ export default function Home() {
                       </div>
                       <div className="mt-2 text-xs text-zinc-500">
                         {amountMode === "fixed"
-                          ? "Patients will pay a single amount."
+                          ? "Payers will pay a single amount."
                           : amountMode === "range"
-                            ? "Patients choose an amount within a range."
-                            : "Patients enter a custom amount."}
+                            ? "Payers choose an amount within a range."
+                            : "Payers enter a custom amount."}
                       </div>
                     </Field>
                   </div>
@@ -229,7 +229,7 @@ export default function Home() {
                     <button
                       type="button"
                       onClick={addField}
-                      className="text-sm font-medium text-sky-700 hover:text-sky-800 hover:underline underline-offset-4"
+                      className="text-sm font-medium text-indigo-700 hover:text-indigo-800 hover:underline underline-offset-4"
                     >
                       + Add Field
                     </button>
@@ -317,13 +317,13 @@ function TopNav() {
     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
       <div className="flex items-center gap-3">
         <div className="h-10 w-10 rounded-2xl bg-white border border-zinc-200/80 shadow-sm grid place-items-center">
-          <div className="h-5 w-5 rounded-lg bg-sky-600" />
+          <div className="h-5 w-5 rounded-lg bg-indigo-600" />
         </div>
         <div>
           <div className="text-sm font-semibold text-zinc-900 tracking-tight">
-            ClearCare Pay
+            Quick Payment Pages
           </div>
-          <div className="text-xs text-zinc-500">Healthcare payment solutions</div>
+          <div className="text-xs text-zinc-500">Reusable payment links for any business</div>
         </div>
       </div>
 
@@ -376,9 +376,9 @@ function StatCard({
             <div className="mt-2 text-2xl font-semibold tracking-tight text-zinc-900">
               {value}
             </div>
-            <div className="mt-1 text-xs text-emerald-600">{delta}</div>
+            <div className="mt-1 text-xs text-indigo-600">{delta}</div>
           </div>
-          <div className="h-10 w-10 rounded-2xl bg-sky-50 border border-sky-100 grid place-items-center text-sky-700">
+          <div className="h-10 w-10 rounded-2xl bg-indigo-50 border border-indigo-100 grid place-items-center text-indigo-700">
             <Icon className="h-4 w-4" />
           </div>
         </div>
@@ -454,16 +454,16 @@ function PreviewShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-[28px] border border-zinc-200 bg-gradient-to-b from-zinc-900 to-zinc-950 p-4 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.55)]">
-      <div className="flex items-center justify-between rounded-2xl bg-zinc-900/70 px-3 py-2 text-xs text-zinc-200">
+    <div className="rounded-[28px] border border-zinc-200/80 bg-white/75 backdrop-blur p-4 shadow-[0_20px_60px_-30px_rgba(2,6,23,0.22)]">
+      <div className="flex items-center justify-between rounded-2xl bg-zinc-50/80 border border-zinc-200 px-3 py-2 text-xs text-zinc-700">
         <div className="flex items-center gap-2">
           <div className="flex gap-1.5">
             <div className="h-2.5 w-2.5 rounded-full bg-red-400/90" />
             <div className="h-2.5 w-2.5 rounded-full bg-yellow-300/90" />
             <div className="h-2.5 w-2.5 rounded-full bg-green-400/90" />
           </div>
-          <div className="ml-2 rounded-lg bg-black/40 px-2 py-1 text-[11px] text-zinc-300">
-            myclinic.com/pay/telehealth-consult
+          <div className="ml-2 rounded-lg bg-white/70 border border-zinc-200 px-2 py-1 text-[11px] text-zinc-600">
+            yourdomain.com/pay/consulting-session
           </div>
         </div>
         <div
@@ -472,7 +472,7 @@ function PreviewShell({
           aria-hidden="true"
         />
       </div>
-      <div className="mt-4 rounded-2xl bg-white p-6">{children}</div>
+      <div className="mt-4 rounded-2xl bg-white p-6 shadow-sm">{children}</div>
     </div>
   );
 }
@@ -563,7 +563,7 @@ function PaymentPreview({
         </div>
       </div>
 
-      <div className="mt-4 text-xs text-zinc-400">Powered by ClearCare Pay</div>
+      <div className="mt-4 text-xs text-zinc-400">Powered by Quick Payment Pages</div>
     </div>
   );
 }

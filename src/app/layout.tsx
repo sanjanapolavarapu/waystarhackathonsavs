@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ClearCare Pay — Builder",
-  description: "Healthcare payment page builder",
+  title: "Quick Payment Pages",
+  description: "Configurable payment pages for any business",
 };
 
 export default function RootLayout({
