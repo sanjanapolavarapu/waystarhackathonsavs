@@ -3,8 +3,9 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, LayoutGrid, Settings2 } from "lucide-react";
+import { BarChart3, LayoutGrid } from "lucide-react";
 
+import { getSelectedOrgId } from "@/lib/org";
 import { cn } from "@/lib/utils";
 
 type Tab = {
@@ -16,16 +17,10 @@ type Tab = {
 
 const TABS: Tab[] = [
   {
-    href: "/",
-    label: "Builder",
-    icon: <Settings2 className="h-4 w-4" />,
-    isActive: (pathname) => pathname === "/",
-  },
-  {
     href: "/admin/pages",
     label: "Pages",
     icon: <LayoutGrid className="h-4 w-4" />,
-    isActive: (pathname) => pathname.startsWith("/admin/pages"),
+    isActive: (pathname) => pathname.startsWith("/admin/pages") || pathname === "/",
   },
   {
     href: "/admin/reports",
@@ -43,6 +38,15 @@ export function TopTabsNav({
   actions?: React.ReactNode;
 }) {
   const pathname = usePathname() ?? "/";
+  const [orgSelected, setOrgSelected] = React.useState(true);
+
+  React.useEffect(() => {
+    // Only matters for org-scoped admin pages (e.g. reports).
+    const id = getSelectedOrgId();
+    setOrgSelected(Boolean(id));
+  }, [pathname]);
+
+  const isAdminUi = pathname.startsWith("/admin");
 
   return (
     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -62,6 +66,22 @@ export function TopTabsNav({
         <div className="inline-flex items-center gap-1 rounded-2xl border border-zinc-200 bg-white/80 backdrop-blur p-1 shadow-sm">
           {TABS.map((tab) => {
             const active = tab.isActive(pathname);
+            const disabled = isAdminUi && tab.href === "/admin/reports" && !orgSelected;
+            if (disabled) {
+              return (
+                <span
+                  key={tab.href}
+                  className={cn(
+                    "inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium",
+                    "text-zinc-400 cursor-not-allowed",
+                  )}
+                  title="Select or join an organization to view reports."
+                >
+                  {tab.icon}
+                  {tab.label}
+                </span>
+              );
+            }
             return (
               <Link
                 key={tab.href}
