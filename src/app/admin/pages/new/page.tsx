@@ -21,13 +21,13 @@ export default function NewPageUi() {
             <label className="text-xs font-medium text-zinc-600" htmlFor="title">
               Page title
             </label>
-            <Input id="title" placeholder="e.g., Telehealth Consultation Fee" />
+            <Input id="title" placeholder="e.g., Consulting Session" />
           </div>
           <div className="space-y-2">
             <label className="text-xs font-medium text-zinc-600" htmlFor="slug">
               URL slug
             </label>
-            <Input id="slug" placeholder="e.g., telehealth-consult" />
+            <Input id="slug" placeholder="e.g., consulting-session" />
             <div className="text-xs text-zinc-500">
               Becomes <span className="font-mono">/pay/&lt;slug&gt;</span>
             </div>

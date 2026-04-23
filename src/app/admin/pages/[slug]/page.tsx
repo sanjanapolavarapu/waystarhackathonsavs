@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import QRCode from "qrcode";
+import * as QRCode from "qrcode";
 import {
   ChevronDown,
   Copy,
@@ -89,7 +89,7 @@ export default function AdminPageEditor({ params }: { params: { slug: string } }
               <Section
                 title="Branding & Styling"
                 icon={
-                  <div className="h-9 w-9 rounded-2xl bg-sky-50 border border-sky-100 grid place-items-center text-sky-700 font-semibold">
+                  <div className="h-9 w-9 rounded-2xl bg-indigo-50 border border-indigo-100 grid place-items-center text-indigo-700 font-semibold">
                     C
                   </div>
                 }
@@ -105,7 +105,7 @@ export default function AdminPageEditor({ params }: { params: { slug: string } }
                         className={cn(
                           "h-9 w-14 rounded-2xl border transition-all hover:-translate-y-[1px]",
                           c === page.brandColor
-                            ? "border-zinc-900/10 ring-2 ring-sky-500/30 shadow-sm"
+                            ? "border-zinc-900/10 ring-2 ring-indigo-500/30 shadow-sm"
                             : "border-white/50 shadow-sm hover:shadow-md",
                         )}
                         style={{ backgroundColor: c }}
@@ -127,7 +127,7 @@ export default function AdminPageEditor({ params }: { params: { slug: string } }
               <Section
                 title="Page Content"
                 icon={
-                  <div className="h-9 w-9 rounded-2xl bg-emerald-50 border border-emerald-100 grid place-items-center text-emerald-700 font-semibold">
+                  <div className="h-9 w-9 rounded-2xl bg-fuchsia-50 border border-fuchsia-100 grid place-items-center text-fuchsia-700 font-semibold">
                     T
                   </div>
                 }
@@ -165,7 +165,7 @@ export default function AdminPageEditor({ params }: { params: { slug: string } }
               <Section
                 title="Payment Amount"
                 icon={
-                  <div className="h-9 w-9 rounded-2xl bg-sky-50 border border-sky-100 grid place-items-center text-sky-700 font-semibold">
+                  <div className="h-9 w-9 rounded-2xl bg-indigo-50 border border-indigo-100 grid place-items-center text-indigo-700 font-semibold">
                     $
                   </div>
                 }
@@ -251,7 +251,7 @@ export default function AdminPageEditor({ params }: { params: { slug: string } }
                         ],
                       }))
                     }
-                    className="text-sm font-medium text-sky-700 hover:text-sky-800 hover:underline underline-offset-4"
+                    className="text-sm font-medium text-indigo-700 hover:text-indigo-800 hover:underline underline-offset-4"
                   >
                     + Add Field
                   </button>
@@ -339,7 +339,7 @@ export default function AdminPageEditor({ params }: { params: { slug: string } }
                   </Field>
                   <Field label="Body template">
                     <textarea
-                      className="min-h-28 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500"
+                      className="min-h-28 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
                       value={page.emailBodyTemplate ?? ""}
                       onChange={(e) => setPage((p) => ({ ...p, emailBodyTemplate: e.target.value }))}
                       placeholder="Use variables like {{payer_name}}, {{amount}}, {{transaction_id}}, {{date}}"
@@ -471,15 +471,15 @@ function PreviewShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-[28px] border border-zinc-200 bg-gradient-to-b from-zinc-900 to-zinc-950 p-4 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.55)]">
-      <div className="flex items-center justify-between rounded-2xl bg-zinc-900/70 px-3 py-2 text-xs text-zinc-200">
+    <div className="rounded-[28px] border border-zinc-200/80 bg-white/75 backdrop-blur p-4 shadow-[0_20px_60px_-30px_rgba(2,6,23,0.22)]">
+      <div className="flex items-center justify-between rounded-2xl bg-zinc-50/80 border border-zinc-200 px-3 py-2 text-xs text-zinc-700">
         <div className="flex items-center gap-2">
           <div className="flex gap-1.5">
             <div className="h-2.5 w-2.5 rounded-full bg-red-400/90" />
             <div className="h-2.5 w-2.5 rounded-full bg-yellow-300/90" />
             <div className="h-2.5 w-2.5 rounded-full bg-green-400/90" />
           </div>
-          <div className="ml-2 rounded-lg bg-black/40 px-2 py-1 text-[11px] text-zinc-300">
+          <div className="ml-2 rounded-lg bg-white/70 border border-zinc-200 px-2 py-1 text-[11px] text-zinc-600">
             yourdomain.com{urlPath}
           </div>
         </div>
@@ -489,7 +489,7 @@ function PreviewShell({
           aria-hidden="true"
         />
       </div>
-      <div className="mt-4 rounded-2xl bg-white p-6">{children}</div>
+      <div className="mt-4 rounded-2xl bg-white p-6 shadow-sm">{children}</div>
     </div>
   );
 }
@@ -513,6 +513,7 @@ function QRCodePanel({ url, title }: { url: string; title: string }) {
   const [pngDataUrl, setPngDataUrl] = React.useState<string | null>(null);
   const [svg, setSvg] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
+  const [debug, setDebug] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -522,6 +523,7 @@ function QRCodePanel({ url, title }: { url: string; title: string }) {
 
     void (async () => {
       try {
+        setDebug(null);
         const [png, svgString] = await Promise.all([
           QRCode.toDataURL(url, {
             margin: 2,
@@ -542,6 +544,9 @@ function QRCodePanel({ url, title }: { url: string; title: string }) {
       } catch {
         if (cancelled) return;
         setError("Could not generate QR code.");
+        setDebug(
+          `QR debug: typeof QRCode=${typeof QRCode}, keys=${Object.keys(QRCode).slice(0, 6).join(",")}`,
+        );
       }
     })();
 
@@ -570,6 +575,7 @@ function QRCodePanel({ url, title }: { url: string; title: string }) {
           <div className="text-xs font-medium text-zinc-600">QR code</div>
           <div className="mt-1 text-xs text-zinc-500 truncate font-mono">{url}</div>
           {error ? <div className="mt-1 text-xs text-red-600">{error}</div> : null}
+          {debug ? <div className="mt-1 text-[11px] text-zinc-500">{debug}</div> : null}
         </div>
       </div>
 
@@ -698,7 +704,7 @@ function PaymentPreview({ page }: { page: PaymentPage }) {
       {page.footerMessage ? (
         <div className="mt-4 text-xs text-zinc-500 text-center">{page.footerMessage}</div>
       ) : null}
-      <div className="mt-2 text-xs text-zinc-400">Powered by ClearCare Pay</div>
+      <div className="mt-2 text-xs text-zinc-400">Powered by Quick Payment Pages</div>
     </div>
   );
 }

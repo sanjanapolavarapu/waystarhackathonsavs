@@ -19,7 +19,7 @@ export function Button({
         "inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors disabled:pointer-events-none disabled:opacity-50",
         size === "sm" ? "h-9 px-3 text-sm" : "h-10 px-4 text-sm",
         variant === "primary" &&
-          "bg-sky-600 text-white hover:bg-sky-700 shadow-sm",
+          "text-white shadow-sm bg-gradient-to-r from-indigo-600 to-fuchsia-600 hover:from-indigo-700 hover:to-fuchsia-700",
         variant === "secondary" &&
           "bg-white text-zinc-900 border border-zinc-200 hover:bg-zinc-50 shadow-sm",
         variant === "ghost" && "bg-transparent hover:bg-zinc-100 text-zinc-800",
