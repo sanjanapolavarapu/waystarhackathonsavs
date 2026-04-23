@@ -74,7 +74,7 @@ export default function Home() {
                 href="/admin/pages"
                 className="w-full sm:w-auto h-11 px-6 inline-flex items-center justify-center rounded-xl border border-zinc-200 bg-white/80 backdrop-blur text-sm font-semibold text-zinc-900 shadow-sm hover:bg-white"
               >
-                Go to admin UI
+                Open dashboard
               </Link>
             </div>
           </div>
