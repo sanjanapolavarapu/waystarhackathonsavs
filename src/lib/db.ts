@@ -10,23 +10,22 @@ function requireSupabase() {
   return client;
 }
 
-function requireOrgId() {
-  const orgId = getSelectedOrgId();
-  if (!orgId) throw new Error("Select or join an organization to continue.");
-  return orgId;
+function getOrgIdOptional() {
+  // TEMP: org gating/scoping disabled (hackathon mode)
+  return getSelectedOrgId();
 }
 
 // Fetch one page with its custom fields by slug (org-scoped)
 export async function getPageBySlug(slug: string): Promise<PaymentPage | null> {
   const client = requireSupabase();
-  const orgId = requireOrgId();
+  const orgId = getOrgIdOptional();
 
-  const result = await client
+  let query = client
     .from("payment_pages")
     .select("*")
-    .eq("slug", slug)
-    .eq("organization_id", orgId)
-    .maybeSingle();
+    .eq("slug", slug);
+  if (orgId) query = query.eq("organization_id", orgId);
+  const result = await query.maybeSingle();
 
   if (result.error) throw result.error;
   if (!result.data) return null;
@@ -51,13 +50,11 @@ export async function getPageBySlug(slug: string): Promise<PaymentPage | null> {
 // Fetch all pages (org-scoped)
 export async function listPages(): Promise<PaymentPage[]> {
   const client = requireSupabase();
-  const orgId = requireOrgId();
+  const orgId = getOrgIdOptional();
 
-  const result = await client
-    .from("payment_pages")
-    .select("*")
-    .eq("organization_id", orgId)
-    .order("updated_at", { ascending: false });
+  let query = client.from("payment_pages").select("*");
+  if (orgId) query = query.eq("organization_id", orgId);
+  const result = await query.order("updated_at", { ascending: false });
 
   if (result.error) throw result.error;
   return (result.data ?? [])

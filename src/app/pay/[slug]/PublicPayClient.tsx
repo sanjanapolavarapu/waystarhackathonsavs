@@ -151,6 +151,7 @@ export function PublicPayClient({ slug }: { slug: string }) {
         <div className="flex flex-col items-center">
           <div className="h-14 w-14 shrink-0 rounded-full border border-zinc-200 bg-white shadow-sm grid place-items-center overflow-hidden p-1.5">
             {page.logoUrl && !logoBroken ? (
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={page.logoUrl}
                 alt=""
