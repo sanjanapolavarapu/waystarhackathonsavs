@@ -14,6 +14,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
+import { getPageInsights, type PageInsightsMetrics } from "@/lib/analytics";
 import { getPageBySlug, savePage } from "@/lib/db";
 import { validateGlCodes } from "@/lib/gl-code";
 import type { CustomField, CustomFieldType, PaymentPage } from "@/lib/qpp-types";
@@ -65,6 +66,8 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
   const [saveSuccess, setSaveSuccess] = React.useState<string | null>(null);
   const [saveError, setSaveError] = React.useState<string | null>(null);
   const [dismissedInsights, setDismissedInsights] = React.useState<Set<string>>(() => new Set());
+  const [pageInsights, setPageInsights] = React.useState<PageInsightsMetrics | null>(null);
+  const [insightsLoading, setInsightsLoading] = React.useState(false);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -97,6 +100,27 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
       cancelled = true;
     };
   }, [slug]);
+
+  React.useEffect(() => {
+    if (!page.id) return;
+    let cancelled = false;
+    setPageInsights(null);
+    setInsightsLoading(true);
+    void (async () => {
+      try {
+        const data = await getPageInsights(page.id);
+        if (!cancelled) setPageInsights(data);
+      } catch {
+        if (!cancelled) setPageInsights(null);
+      } finally {
+        if (!cancelled) setInsightsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [page.id]);
+
   const glValidation = validateGlCodes(page.glCodes);
 
   const amountModeUi: "fixed" | "range" | "custom" =
@@ -671,6 +695,8 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
 
               <PageInsightsSection
                 page={page}
+                insights={pageInsights}
+                insightsLoading={insightsLoading}
                 dismissed={dismissedInsights}
                 onDismiss={(id) =>
                   setDismissedInsights((prev) => {
@@ -679,15 +705,7 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
                     return next;
                   })
                 }
-                onApplyTooManyFields={() => {
-                  setPage((p) => {
-                    const ordered = p.fields.slice().sort((a, b) => a.order - b.order);
-                    const nextFields = ordered.map((field, index) =>
-                      index >= 5 && field.required ? { ...field, required: false } : field,
-                    );
-                    return { ...p, fields: normalizeFieldOrder(nextFields) };
-                  });
-                }}
+                setPage={setPage}
               />
             </CardContent>
           </Card>
@@ -764,84 +782,327 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
 }
 
 const INSIGHT_IDS = {
-  tooManyFields: "too-many-fields",
-  noCustomFields: "no-custom-fields",
-  noLogo: "no-logo",
-  missingSubtitle: "missing-subtitle",
-  welcomeHeader: "welcome-header",
+  highDropoff: "data-high-dropoff",
+  mobileConversion: "data-mobile-conversion",
+  highFailure: "data-high-failure",
+  peakDay: "data-peak-day",
+  noPaymentsYet: "data-no-payments-yet",
+  noLogo: "form-no-logo",
+  noFields: "form-no-fields",
+  unlabeledFields: "form-unlabeled",
+  emptyDropdown: "form-dropdown-options",
+  fieldLimit: "form-field-limit",
+  noSubtitle: "form-no-subtitle",
 } as const;
+
+function newFieldId() {
+  return `field_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+}
+
+function defaultNameAndReferenceFields(): CustomField[] {
+  return [
+    {
+      id: newFieldId(),
+      label: "Full name",
+      type: "TEXT",
+      required: true,
+      placeholder: "Jane Doe",
+      helperText: "",
+      options: [],
+      order: 0,
+    },
+    {
+      id: newFieldId(),
+      label: "Reference / invoice #",
+      type: "TEXT",
+      required: false,
+      placeholder: "Optional",
+      helperText: "",
+      options: [],
+      order: 1,
+    },
+  ];
+}
+
+function reorderCheckboxDropdownLast(fields: CustomField[]): CustomField[] {
+  const sorted = fields.slice().sort((a, b) => a.order - b.order);
+  const tailTypes = new Set<CustomFieldType>(["CHECKBOX", "DROPDOWN"]);
+  const head = sorted.filter((f) => !tailTypes.has(f.type));
+  const tail = sorted.filter((f) => tailTypes.has(f.type));
+  return normalizeFieldOrder([...head, ...tail]);
+}
+
+type InsightCandidate = {
+  id: string;
+  kind: "warning" | "info";
+  title: string;
+  message: string;
+  apply?: () => void;
+};
 
 function PageInsightsSection({
   page,
+  insights,
+  insightsLoading,
   dismissed,
   onDismiss,
-  onApplyTooManyFields,
+  setPage,
 }: {
   page: PaymentPage;
+  insights: PageInsightsMetrics | null;
+  insightsLoading: boolean;
   dismissed: Set<string>;
   onDismiss: (id: string) => void;
-  onApplyTooManyFields: () => void;
+  setPage: React.Dispatch<React.SetStateAction<PaymentPage>>;
 }) {
-  const n = page.fields.length;
+  const fieldCount = page.fields.length;
+  const hasBlankLabels = page.fields.some((f) => !String(f.label ?? "").trim());
+  const hasEmptyDropdown = page.fields.some(
+    (f) => f.type === "DROPDOWN" && (f.options?.length ?? 0) === 0,
+  );
+  const atFieldCap = fieldCount >= MAX_CUSTOM_FIELDS;
+  const hasRemovableOptionalField = page.fields.some((f) => !f.required);
 
-  const candidates: Array<{
-    id: string;
-    kind: "warning" | "info";
-    title: string;
-    message: string;
-    apply?: () => void;
-  }> = [];
+  const analyticsCandidates: InsightCandidate[] = [];
 
-  if (n > 5 && !dismissed.has(INSIGHT_IDS.tooManyFields)) {
-    candidates.push({
-      id: INSIGHT_IDS.tooManyFields,
-      kind: "warning",
-      title: "Too many fields",
-      message: `You have ${n} fields. Pages with 5 or fewer fields convert 40% better. Consider making some optional.`,
-      apply: onApplyTooManyFields,
-    });
+  if (insights && !insightsLoading) {
+    const cr = Math.round(insights.conversionRate * 10) / 10;
+    const mr = Math.round(insights.mobileRate * 10) / 10;
+    const fr = Math.round(insights.failureRate * 10) / 10;
+
+    if (
+      insights.conversionRate < 40 &&
+      fieldCount > 5 &&
+      !dismissed.has(INSIGHT_IDS.highDropoff)
+    ) {
+      analyticsCandidates.push({
+        id: INSIGHT_IDS.highDropoff,
+        kind: "warning",
+        title: "High drop-off detected",
+        message: `Only ${cr}% of visitors complete payment. You have ${fieldCount} fields — pages with 5 or fewer convert 40% better.`,
+        apply: () => {
+          setPage((p) => {
+            const ordered = p.fields.slice().sort((a, b) => a.order - b.order);
+            const nextFields = ordered.map((field, index) =>
+              index > 4 && field.required ? { ...field, required: false } : field,
+            );
+            return { ...p, fields: normalizeFieldOrder(nextFields) };
+          });
+        },
+      });
+    }
+
+    if (
+      insights.mobileRate > 50 &&
+      insights.conversionRate < 40 &&
+      !dismissed.has(INSIGHT_IDS.mobileConversion)
+    ) {
+      analyticsCandidates.push({
+        id: INSIGHT_IDS.mobileConversion,
+        kind: "warning",
+        title: "Mobile visitors aren't converting",
+        message: `${mr}% of your visitors are on mobile but conversion is low. Simplify your form for mobile users.`,
+        apply: () => {
+          setPage((p) => ({ ...p, fields: reorderCheckboxDropdownLast(p.fields) }));
+        },
+      });
+    }
+
+    if (insights.failureRate > 15 && !dismissed.has(INSIGHT_IDS.highFailure)) {
+      const helper = "Double-check your billing ZIP matches your card statement";
+      analyticsCandidates.push({
+        id: INSIGHT_IDS.highFailure,
+        kind: "warning",
+        title: "High payment failure rate",
+        message: `${fr}% of payment attempts are failing — 3x the normal rate. Adding helper text to your card fields can reduce confusion.`,
+        apply: () => {
+          setPage((p) => {
+            const ordered = p.fields.slice().sort((a, b) => a.order - b.order);
+            const lower = (s: string) => s.toLowerCase();
+            let touched = false;
+            const next = ordered.map((f) => {
+              const lab = lower(f.label ?? "");
+              if (lab.includes("zip") || lab.includes("billing")) {
+                touched = true;
+                return { ...f, helperText: helper };
+              }
+              return f;
+            });
+            if (touched) return { ...p, fields: normalizeFieldOrder(next) };
+            const id = newFieldId();
+            return {
+              ...p,
+              fields: normalizeFieldOrder([
+                ...ordered,
+                {
+                  id,
+                  label: "Billing ZIP",
+                  type: "TEXT" as CustomFieldType,
+                  required: false,
+                  placeholder: "",
+                  helperText: helper,
+                  options: [],
+                  order: ordered.length,
+                },
+              ]),
+            };
+          });
+        },
+      });
+    }
+
+    if (insights.peakDay && insights.totalPaid > 5 && !dismissed.has(INSIGHT_IDS.peakDay)) {
+      const day = insights.peakDay;
+      analyticsCandidates.push({
+        id: INSIGHT_IDS.peakDay,
+        kind: "info",
+        title: "Peak day opportunity",
+        message: `Most of your payments happen on ${day}. Add urgency messaging to boost conversions on other days.`,
+        apply: () => {
+          setPage((p) => ({
+            ...p,
+            headerMessage: `Payment activity peaks on ${day}s — complete your payment today to avoid delays.`,
+          }));
+        },
+      });
+    }
+
+    if (insights.totalVisits > 0 && insights.totalPaid === 0 && !dismissed.has(INSIGHT_IDS.noPaymentsYet)) {
+      analyticsCandidates.push({
+        id: INSIGHT_IDS.noPaymentsYet,
+        kind: "warning",
+        title: "No successful payments yet",
+        message: `${insights.totalVisits} people have visited this page but nobody has paid. Check that your payment processor is configured correctly.`,
+      });
+    }
   }
-  if (n === 0 && !dismissed.has(INSIGHT_IDS.noCustomFields)) {
-    candidates.push({
-      id: INSIGHT_IDS.noCustomFields,
-      kind: "warning",
-      title: "No custom fields",
-      message: "Adding fields like name and email helps you identify payers and improves trust.",
-    });
-  }
-  if (!page.logoUrl && !dismissed.has(INSIGHT_IDS.noLogo)) {
-    candidates.push({
+
+  const formCandidates: InsightCandidate[] = [];
+
+  if (!dismissed.has(INSIGHT_IDS.noLogo) && !String(page.logoUrl ?? "").trim()) {
+    formCandidates.push({
       id: INSIGHT_IDS.noLogo,
       kind: "info",
-      title: "No logo uploaded",
-      message: "Pages with a logo appear more trustworthy and convert better.",
-    });
-  }
-  if (!page.subtitle && !dismissed.has(INSIGHT_IDS.missingSubtitle)) {
-    candidates.push({
-      id: INSIGHT_IDS.missingSubtitle,
-      kind: "info",
-      title: "Missing description",
-      message: "A subtitle helps payers understand what they're paying for before they fill out the form.",
+      title: "Add your logo",
+      message:
+        "A logo on the pay page builds trust. Paste an image URL under Branding & Styling — PNG, JPG, or SVG.",
       apply: () => {
-        queueMicrotask(() => document.getElementById("page-insights-subtitle")?.focus());
+        document.getElementById("page-logo-url")?.focus();
       },
     });
   }
-  if (
-    (page.headerMessage === undefined || page.headerMessage === "") &&
-    !dismissed.has(INSIGHT_IDS.welcomeHeader)
-  ) {
-    candidates.push({
-      id: INSIGHT_IDS.welcomeHeader,
+
+  if (!dismissed.has(INSIGHT_IDS.noFields) && fieldCount === 0) {
+    formCandidates.push({
+      id: INSIGHT_IDS.noFields,
       kind: "info",
-      title: "Add a welcome message",
-      message: "A short header message increases payer confidence.",
+      title: "Add custom fields",
+      message:
+        "You have no custom data fields yet. Most teams collect at least a name and a reference or invoice number.",
       apply: () => {
-        queueMicrotask(() => document.getElementById("page-insights-header-message")?.focus());
+        setPage((p) => ({
+          ...p,
+          fields: normalizeFieldOrder(defaultNameAndReferenceFields()),
+        }));
       },
     });
   }
+
+  if (!dismissed.has(INSIGHT_IDS.unlabeledFields) && hasBlankLabels) {
+    formCandidates.push({
+      id: INSIGHT_IDS.unlabeledFields,
+      kind: "warning",
+      title: "Fields need labels",
+      message:
+        "Every visible field should have a label so payers know what to enter. Remove unused fields or name them.",
+      apply: () => {
+        setPage((p) => {
+          const ordered = p.fields.slice().sort((a, b) => a.order - b.order);
+          const next = ordered.filter(
+            (f) => String(f.label ?? "").trim() || f.required,
+          );
+          const fixed = next.map((f) =>
+            String(f.label ?? "").trim()
+              ? f
+              : { ...f, label: "Information", placeholder: f.placeholder ?? "Enter details" },
+          );
+          return { ...p, fields: normalizeFieldOrder(fixed) };
+        });
+      },
+    });
+  }
+
+  if (!dismissed.has(INSIGHT_IDS.emptyDropdown) && hasEmptyDropdown) {
+    formCandidates.push({
+      id: INSIGHT_IDS.emptyDropdown,
+      kind: "warning",
+      title: "Dropdown needs options",
+      message:
+        "At least one dropdown has no choices. Add comma-separated options in the field editor or change the type.",
+      apply: () => {
+        setPage((p) => ({
+          ...p,
+          fields: normalizeFieldOrder(
+            p.fields.map((f) =>
+              f.type === "DROPDOWN" && (f.options?.length ?? 0) === 0
+                ? { ...f, options: ["Option 1", "Option 2"] }
+                : f,
+            ),
+          ),
+        }));
+      },
+    });
+  }
+
+  if (!dismissed.has(INSIGHT_IDS.fieldLimit) && atFieldCap) {
+    formCandidates.push({
+      id: INSIGHT_IDS.fieldLimit,
+      kind: "warning",
+      title: "Maximum fields reached",
+      message: hasRemovableOptionalField
+        ? `You are using all ${MAX_CUSTOM_FIELDS} custom fields. Remove optional fields you do not need so the form stays easy to complete.`
+        : `You are using all ${MAX_CUSTOM_FIELDS} custom fields and every field is required. Make some fields optional in the editor, then you can remove ones you do not need.`,
+      apply: hasRemovableOptionalField
+        ? () => {
+            setPage((p) => {
+              const ordered = p.fields.slice().sort((a, b) => a.order - b.order);
+              for (let i = ordered.length - 1; i >= 0; i--) {
+                if (!ordered[i].required) {
+                  const next = ordered.filter((_, idx) => idx !== i);
+                  return { ...p, fields: normalizeFieldOrder(next) };
+                }
+              }
+              return p;
+            });
+          }
+        : undefined,
+    });
+  }
+
+  if (!dismissed.has(INSIGHT_IDS.noSubtitle) && !String(page.subtitle ?? "").trim()) {
+    formCandidates.push({
+      id: INSIGHT_IDS.noSubtitle,
+      kind: "info",
+      title: "Add a short subtitle",
+      message:
+        "A one-line description under the title explains what the payment is for and reduces confusion.",
+      apply: () => {
+        setPage((p) => ({
+          ...p,
+          subtitle: "Secure payment — complete the form below.",
+        }));
+        requestAnimationFrame(() => document.getElementById("page-insights-subtitle")?.focus());
+      },
+    });
+  }
+
+  const candidates = [...analyticsCandidates, ...formCandidates];
+
+  const subtitleVisits = insights?.totalVisits ?? 0;
+  const subtitlePaid = insights?.totalPaid ?? 0;
+  const analyticsReady = Boolean(insights && !insightsLoading);
+  const showAllClear =
+    analyticsReady && analyticsCandidates.length === 0 && formCandidates.length === 0;
 
   return (
     <Section
@@ -853,7 +1114,19 @@ function PageInsightsSection({
       }
     >
       <div className="space-y-3">
-        {candidates.length === 0 ? (
+        <div className="text-xs text-zinc-500">
+          Based on {insightsLoading ? "…" : subtitleVisits} visits and {insightsLoading ? "…" : subtitlePaid}{" "}
+          payments
+          {formCandidates.length > 0 ? (
+            <span className="text-zinc-400"> · Smart suggestions also reflect your form and branding setup</span>
+          ) : null}
+        </div>
+        {!insights && !insightsLoading ? (
+          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-600">
+            Analytics unavailable. Check Supabase configuration and the page_visits table.
+          </div>
+        ) : null}
+        {showAllClear ? (
           <div
             className="rounded-2xl border border-emerald-200 bg-emerald-50/80 px-4 py-3 text-sm text-emerald-900"
             role="status"
@@ -861,27 +1134,26 @@ function PageInsightsSection({
           >
             ✅ Page looks good!
           </div>
-        ) : (
-          candidates.map((c) => (
-            <InsightSuggestionCard
-              key={c.id}
-              id={c.id}
-              kind={c.kind}
-              title={c.title}
-              message={c.message}
-              hasApply={Boolean(c.apply)}
-              onApply={
-                c.apply
-                  ? () => {
-                      c.apply?.();
-                      onDismiss(c.id);
-                    }
-                  : undefined
-              }
-              onDismiss={() => onDismiss(c.id)}
-            />
-          ))
-        )}
+        ) : null}
+        {candidates.map((c) => (
+          <InsightSuggestionCard
+            key={c.id}
+            id={c.id}
+            kind={c.kind}
+            title={c.title}
+            message={c.message}
+            hasApply={Boolean(c.apply)}
+            onApply={
+              c.apply
+                ? () => {
+                    c.apply?.();
+                    onDismiss(c.id);
+                  }
+                : undefined
+            }
+            onDismiss={() => onDismiss(c.id)}
+          />
+        ))}
       </div>
     </Section>
   );

@@ -46,15 +46,6 @@ export async function GET(_req, { params }) {
     .map((r) => fromCustomFieldRow(r))
     .filter(Boolean);
 
-  // Best-effort visit tracking for analytics funnel.
-  // One row per page load request.
-  await supabase.from("page_visits").insert({
-    page_id: result.data.id ?? null,
-    page_slug: slug,
-    organization_id: result.data.organization_id ?? null,
-    visited_at: new Date().toISOString(),
-  });
-
   return NextResponse.json({ page });
 }
 
