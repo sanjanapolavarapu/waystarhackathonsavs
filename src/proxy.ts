@@ -24,7 +24,7 @@ export async function proxy(req: NextRequest) {
   // Allow auth endpoints and login page without session.
   if (pathname === "/admin/login") {
     const ok = await hasValidAdminCookie(req);
-    if (ok) return NextResponse.redirect(new URL("/", req.url));
+    if (ok) return NextResponse.redirect(new URL("/admin/pages", req.url));
     return NextResponse.next();
   }
 
@@ -36,6 +36,11 @@ export async function proxy(req: NextRequest) {
   const ok = await hasValidAdminCookie(req);
   if (!ok) {
     return NextResponse.redirect(new URL("/admin/login", req.url));
+  }
+
+  // Treat "/" as a landing redirect into Pages.
+  if (pathname === "/") {
+    return NextResponse.redirect(new URL("/admin/pages", req.url));
   }
 
   return NextResponse.next();
