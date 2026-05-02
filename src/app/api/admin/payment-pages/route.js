@@ -2,7 +2,13 @@ import { NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase-server";
 import { fromPaymentPagesRow, toPaymentPagesRow } from "@/lib/paymentPagesDb";
 
-export async function GET() {
+function requireOrgId(req) {
+  const orgId = req.headers.get("x-org-id");
+  if (!orgId || !String(orgId).trim()) return null;
+  return String(orgId).trim();
+}
+
+export async function GET(req) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
     return NextResponse.json(
@@ -11,9 +17,15 @@ export async function GET() {
     );
   }
 
+  const orgId = requireOrgId(req);
+  if (!orgId) {
+    return NextResponse.json({ error: "Missing x-org-id header." }, { status: 400 });
+  }
+
   const result = await supabase
     .from("payment_pages")
     .select("*")
+    .eq("organization_id", orgId)
     .order("updated_at", { ascending: false });
 
   if (result.error) {
@@ -34,6 +46,11 @@ export async function POST(req) {
       { error: "Missing Supabase env vars on server." },
       { status: 500 },
     );
+  }
+
+  const orgId = requireOrgId(req);
+  if (!orgId) {
+    return NextResponse.json({ error: "Missing x-org-id header." }, { status: 400 });
   }
 
   const body = await req.json();
@@ -61,7 +78,7 @@ export async function POST(req) {
 
   const insert = await supabase
     .from("payment_pages")
-    .insert({ admin_id: adminId, ...toPaymentPagesRow(page) })
+    .insert({ admin_id: adminId, organization_id: orgId, ...toPaymentPagesRow(page) })
     .select("*")
     .single();
 

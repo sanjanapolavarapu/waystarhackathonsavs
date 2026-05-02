@@ -3,8 +3,16 @@ import { getSupabaseServerClient } from "@/lib/supabase-server";
 import { fromPaymentPagesRow, toPaymentPagesRow } from "@/lib/paymentPagesDb";
 import { fromCustomFieldRow, toCustomFieldRow } from "@/lib/customFieldsDb";
 
+function requireOrgId(req) {
+  const orgId = req.headers.get("x-org-id");
+  if (!orgId || !String(orgId).trim()) return null;
+  return String(orgId).trim();
+}
+
 export async function GET(_req, { params }) {
   const { slug } = await params;
+  const orgId = requireOrgId(_req);
+  if (!orgId) return NextResponse.json({ error: "Missing x-org-id header." }, { status: 400 });
 
   const supabase = getSupabaseServerClient();
   if (!supabase) {
@@ -18,6 +26,7 @@ export async function GET(_req, { params }) {
     .from("payment_pages")
     .select("*")
     .eq("slug", slug)
+    .eq("organization_id", orgId)
     .maybeSingle();
 
   if (result.error) {
@@ -54,6 +63,9 @@ export async function PUT(req, { params }) {
   const page = body?.page;
   if (!page) return NextResponse.json({ error: "Missing page" }, { status: 400 });
 
+  const orgId = requireOrgId(req);
+  if (!orgId) return NextResponse.json({ error: "Missing x-org-id header." }, { status: 400 });
+
   const supabase = getSupabaseServerClient();
   if (!supabase) {
     return NextResponse.json(
@@ -67,6 +79,7 @@ export async function PUT(req, { params }) {
     .from("payment_pages")
     .select("id")
     .eq("slug", slug)
+    .eq("organization_id", orgId)
     .maybeSingle();
 
   if (existing.error) {
@@ -78,8 +91,9 @@ export async function PUT(req, { params }) {
 
   const update = await supabase
     .from("payment_pages")
-    .update(toPaymentPagesRow({ ...page, slug }))
+    .update(toPaymentPagesRow({ ...page, slug, organizationId: orgId }))
     .eq("slug", slug)
+    .eq("organization_id", orgId)
     .select("*")
     .single();
 

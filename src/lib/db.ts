@@ -2,6 +2,7 @@ import type { PaymentPage, Transaction } from "@/lib/qpp-types";
 import { getSupabaseClient } from "@/lib/supabase";
 import { fromPaymentPagesRow } from "@/lib/paymentPagesDb";
 import { fromCustomFieldRow } from "@/lib/customFieldsDb";
+import { getSelectedOrgId } from "@/lib/org";
 
 async function jsonOrThrow<T>(res: Response): Promise<T> {
   const json = (await res.json().catch(() => ({}))) as unknown;
@@ -25,9 +26,15 @@ function requireSupabase() {
 export async function getPageBySlug(slug: string): Promise<PaymentPage | null> {
   const client = requireSupabase();
 
-  // TEMP: org scoping disabled (hackathon mode). Some environments create pages
-  // without an organization_id, which would make org-scoped reads return 404.
-  const result = await client.from("payment_pages").select("*").eq("slug", slug).maybeSingle();
+  const orgId = getSelectedOrgId();
+  if (!orgId) throw new Error("Select or join an organization to continue.");
+
+  const result = await client
+    .from("payment_pages")
+    .select("*")
+    .eq("slug", slug)
+    .eq("organization_id", orgId)
+    .maybeSingle();
 
   if (result.error) throw result.error;
   if (!result.data) return null;
@@ -52,10 +59,13 @@ export async function getPageBySlug(slug: string): Promise<PaymentPage | null> {
 // Fetch all pages (org-scoped)
 export async function listPages(): Promise<PaymentPage[]> {
   const client = requireSupabase();
-  // TEMP: org scoping disabled (hackathon mode).
+  const orgId = getSelectedOrgId();
+  if (!orgId) throw new Error("Select or join an organization to continue.");
+
   const result = await client
     .from("payment_pages")
     .select("*")
+    .eq("organization_id", orgId)
     .order("updated_at", { ascending: false });
 
   if (result.error) throw result.error;
@@ -69,10 +79,13 @@ export async function listPages(): Promise<PaymentPage[]> {
  * Browser Supabase writes often fail under RLS; the API matches the admin editor expectations.
  */
 export async function savePage(page: PaymentPage): Promise<PaymentPage> {
+  const orgId = getSelectedOrgId();
+  if (!orgId) throw new Error("Select or join an organization to continue.");
+
   const slug = encodeURIComponent(page.slug);
   const putRes = await fetch(`/api/admin/payment-pages/${slug}`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "x-org-id": orgId },
     body: JSON.stringify({ page }),
     credentials: "same-origin",
   });
@@ -86,7 +99,7 @@ export async function savePage(page: PaymentPage): Promise<PaymentPage> {
   if (putRes.status === 404) {
     const postRes = await fetch("/api/admin/payment-pages", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "x-org-id": orgId },
       body: JSON.stringify({ page }),
       credentials: "same-origin",
     });
