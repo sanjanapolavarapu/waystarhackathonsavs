@@ -358,7 +358,6 @@ Two pages are pre-configured after running `npm run seed`:
 | Consulting Session | `/pay/consulting-session` | Fixed ($89.00) | Custom fields: Full Name, Service Date, Reference ID |
 | Donation | `/pay/donation` | User-Entered | Custom fields: Full Name, Email, Donation Type (dropdown), Subscribe to updates (checkbox) |
 
-
 ---
 
 

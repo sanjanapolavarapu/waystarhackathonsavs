@@ -13,7 +13,7 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { amount, payerEmail, pageSlug } = body;
+    const { amount, payerEmail, payerName, pageSlug } = body;
 
     if (!Number.isFinite(amount) || amount <= 0) {
       return NextResponse.json({ error: 'Invalid amount.' }, { status: 400 });
@@ -43,6 +43,7 @@ export async function POST(request) {
 
     const metadata = {
       payer_email: payerEmail ? String(payerEmail) : '',
+      payer_name: typeof payerName === "string" ? payerName : "",
       page_slug: slugTrim,
       ...(pageId ? { page_id: String(pageId) } : {}),
       ...(organizationId ? { organization_id: String(organizationId) } : {}),

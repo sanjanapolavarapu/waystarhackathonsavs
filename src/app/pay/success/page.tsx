@@ -1,7 +1,7 @@
 import Link from "next/link";
-import * as React from "react";
 
-import { PaySuccessClient } from "./PaySuccessClient";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 export default function PaySuccessPage() {
   return (

@@ -53,6 +53,22 @@ export default function CheckoutForm({ returnUrl }) {
       });
 
       setTimeout(() => {
+        // Best-effort: finalize transaction + email receipt (hackathon flow).
+        try {
+          const raw = window.sessionStorage.getItem("qpp_pending_payment");
+          if (raw) {
+            const payload = JSON.parse(raw);
+            window.sessionStorage.removeItem("qpp_pending_payment");
+            void fetch("/api/payments/complete", {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify(payload),
+            });
+          }
+        } catch {
+          // ignore
+        }
+
         const base = returnUrl || `${window.location.origin}/pay/success`;
         const url = new URL(base, window.location.origin);
         url.searchParams.set("pi", paymentIntent.id);
