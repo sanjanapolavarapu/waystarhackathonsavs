@@ -71,7 +71,7 @@ export default function Home() {
                   href="/admin/signup"
                   className="w-full sm:w-auto h-11 px-6 inline-flex items-center justify-center rounded-xl text-sm font-semibold text-white shadow-sm bg-gradient-to-r from-indigo-600 to-fuchsia-600 hover:from-indigo-700 hover:to-fuchsia-700"
                 >
-                  Start free
+                  Create your first page
                 </Link>
                 <Link
                   href="/admin/pages"
