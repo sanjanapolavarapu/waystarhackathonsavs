@@ -254,6 +254,7 @@ const MOCK_VISITS: VisitRow[] = (() => {
 export default function ReportsUi() {
   const loading = false;
   const error: string | null = null;
+  const visitsWarning: string | null = null;
   const [tx] = React.useState<TxRow[]>(MOCK_TRANSACTIONS);
   const [visits] = React.useState<VisitRow[]>(MOCK_VISITS);
   const [filterDateRange, setFilterDateRange] = React.useState("");
