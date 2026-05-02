@@ -3,6 +3,8 @@
 import * as React from "react";
 import { Download } from "lucide-react";
 
+import { getSupabaseClient } from "@/lib/supabase";
+import { getSelectedOrgId, SELECTED_ORG_CHANGED_EVENT } from "@/lib/org";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -116,150 +118,96 @@ type VisitRow = {
   form_started?: boolean | null;
 };
 
-/** Static demo data — replace with live Supabase/API when schema is stable. */
-const MOCK_TRANSACTIONS: TxRow[] = (() => {
-  const weekStart = new Date();
-  weekStart.setHours(12, 0, 0, 0);
-  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-  const at = (dayOffset: number, hour: number, minute = 0) => {
-    const d = new Date(weekStart);
-    d.setDate(weekStart.getDate() + dayOffset);
-    d.setHours(hour, minute, 0, 0);
-    return d.toISOString();
-  };
-  return [
-    {
-      id: "pi_demo_vidhi_001",
-      page_slug: "vidhi-tests",
-      created_at: at(4, 14, 22),
-      status: "succeeded",
-      payment_method: "card",
-      amount: 9,
-      payer_email: "payer1@example.com",
-      gl_code: "4100-110-900",
-    },
-    {
-      id: "pi_demo_anika_002",
-      page_slug: "anikas-fashion-store",
-      created_at: at(4, 11, 5),
-      status: "succeeded",
-      payment_method: "card",
-      amount: 45,
-      payer_email: "style@example.com",
-      gl_code: "2100-330-100",
-    },
-    {
-      id: "pi_demo_consult_003",
-      page_slug: "consulting-session",
-      created_at: at(3, 16, 40),
-      status: "succeeded",
-      payment_method: "card+cashapp",
-      amount: 189,
-      payer_email: "biz@example.com",
-      gl_code: "1000-200-300",
-    },
-    {
-      id: "pi_demo_vidhi_004",
-      page_slug: "vidhi-tests",
-      created_at: at(3, 9, 15),
-      status: "failed",
-      payment_method: "card",
-      amount: 25,
-      payer_email: "declined@example.com",
-      gl_code: "4100-110-900",
-    },
-    {
-      id: "pi_demo_donation_005",
-      page_slug: "donation",
-      created_at: at(2, 20, 0),
-      status: "succeeded",
-      payment_method: "card",
-      amount: 50,
-      payer_email: "donor@example.com",
-      gl_code: "5000-010-050",
-    },
-    {
-      id: "pi_demo_vidhi_006",
-      page_slug: "vidhi-tests",
-      created_at: at(2, 8, 30),
-      status: "succeeded",
-      payment_method: "card",
-      amount: 12.5,
-      payer_email: "quick@example.com",
-      gl_code: "4100-110-900",
-    },
-    {
-      id: "pi_demo_anika_007",
-      page_slug: "anikas-fashion-store",
-      created_at: at(1, 13, 50),
-      status: "succeeded",
-      payment_method: "klarna",
-      amount: 120,
-      payer_email: "klarna.user@example.com",
-      gl_code: "2100-330-100",
-    },
-    {
-      id: "pi_demo_pending_008",
-      page_slug: "vidhi-tests",
-      created_at: at(4, 19, 1),
-      status: "requires_payment_method",
-      payment_method: null,
-      amount: 15,
-      payer_email: "abandoned@example.com",
-      gl_code: "4100-110-900",
-    },
-    {
-      id: "pi_demo_consult_009",
-      page_slug: "consulting-session",
-      created_at: at(0, 10, 0),
-      status: "succeeded",
-      payment_method: "card",
-      amount: 250,
-      payer_email: "retainer@example.com",
-      gl_code: "1000-200-300",
-    },
-    {
-      id: "pi_demo_fail_010",
-      page_slug: "donation",
-      created_at: at(1, 22, 10),
-      status: "canceled",
-      payment_method: "card",
-      amount: 0,
-      payer_email: "timeout@example.com",
-      gl_code: "5000-010-050",
-    },
-  ];
-})();
-
-const MOCK_VISITS: VisitRow[] = (() => {
-  const slugs = ["vidhi-tests", "anikas-fashion-store", "consulting-session", "donation"];
-  const rows: VisitRow[] = [];
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
-  start.setDate(start.getDate() - start.getDay());
-  for (let i = 0; i < 248; i += 1) {
-    const d = new Date(start);
-    d.setDate(start.getDate() + (i % 7));
-    d.setHours(8 + (i % 10), (i * 11) % 60, 0, 0);
-    rows.push({
-      id: `visit-demo-${i}`,
-      page_slug: slugs[i % slugs.length],
-      visited_at: d.toISOString(),
-      form_started: i % 3 !== 0,
-    });
-  }
-  return rows;
-})();
-
 export default function ReportsUi() {
-  const loading = false;
-  const error: string | null = null;
-  const visitsWarning: string | null = null;
-  const [tx] = React.useState<TxRow[]>(MOCK_TRANSACTIONS);
-  const [visits] = React.useState<VisitRow[]>(MOCK_VISITS);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+  const [visitsWarning, setVisitsWarning] = React.useState<string | null>(null);
+  const [tx, setTx] = React.useState<TxRow[]>([]);
+  const [visits, setVisits] = React.useState<VisitRow[]>([]);
   const [filterDateRange, setFilterDateRange] = React.useState("");
   const [filterPageSlug, setFilterPageSlug] = React.useState("");
   const [filterStatus, setFilterStatus] = React.useState("");
+
+  React.useEffect(() => {
+    let cancelled = false;
+
+    const load = async () => {
+      const orgId = getSelectedOrgId();
+      const supabase = getSupabaseClient();
+      if (!orgId) {
+        queueMicrotask(() => {
+          if (cancelled) return;
+          setError("Select or join an organization to view reports.");
+          setTx([]);
+          setVisits([]);
+          setVisitsWarning(null);
+          setLoading(false);
+        });
+        return;
+      }
+      if (!supabase) {
+        queueMicrotask(() => {
+          if (cancelled) return;
+          setError("Supabase isn’t configured.");
+          setTx([]);
+          setVisits([]);
+          setVisitsWarning(null);
+          setLoading(false);
+        });
+        return;
+      }
+
+      queueMicrotask(() => {
+        if (cancelled) return;
+        setLoading(true);
+        setError(null);
+      });
+
+      try {
+        const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
+        if (sessionErr || !sessionData.session?.access_token) throw new Error("Not signed in");
+
+        const res = await fetch(
+          `/api/admin/reports-data?organizationId=${encodeURIComponent(orgId)}`,
+          {
+            headers: { Authorization: `Bearer ${sessionData.session.access_token}` },
+            credentials: "include",
+          },
+        );
+        const json = (await res.json().catch(() => null)) as
+          | { transactions?: TxRow[]; page_visits?: VisitRow[]; visitsWarning?: string | null; error?: string }
+          | null;
+        if (!res.ok) throw new Error(json?.error || `HTTP ${res.status}`);
+
+        queueMicrotask(() => {
+          if (cancelled) return;
+          setTx(Array.isArray(json?.transactions) ? json!.transactions : []);
+          setVisits(Array.isArray(json?.page_visits) ? json!.page_visits : []);
+          setVisitsWarning(typeof json?.visitsWarning === "string" ? json!.visitsWarning : null);
+          setLoading(false);
+        });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "Failed to load reports.";
+        queueMicrotask(() => {
+          if (cancelled) return;
+          setError(msg);
+          setTx([]);
+          setVisits([]);
+          setVisitsWarning(null);
+          setLoading(false);
+        });
+      }
+    };
+
+    void load();
+
+    const onOrgChange = () => void load();
+    window.addEventListener(SELECTED_ORG_CHANGED_EVENT, onOrgChange);
+    return () => {
+      cancelled = true;
+      window.removeEventListener(SELECTED_ORG_CHANGED_EVENT, onOrgChange);
+    };
+  }, []);
 
   const dateRangeParsed = React.useMemo(
     () => parseDateRangeInput(filterDateRange),

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Plus, Search } from "lucide-react";
 
 import type { PaymentPage } from "@/lib/qpp-types";
+import { getSelectedOrgId } from "@/lib/org";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,7 +26,11 @@ export default function AdminPagesClient() {
         setError(null);
       });
       try {
-        const res = await fetch("/api/admin/payment-pages");
+        const orgId = getSelectedOrgId();
+        if (!orgId) throw new Error("Select or join an organization to continue.");
+        const res = await fetch("/api/admin/payment-pages", {
+          headers: { "x-org-id": orgId },
+        });
         const json = (await res.json()) as { pages?: PaymentPage[]; error?: string };
         if (!res.ok) throw new Error(json.error || "Failed to load pages");
         if (cancelled) return;
