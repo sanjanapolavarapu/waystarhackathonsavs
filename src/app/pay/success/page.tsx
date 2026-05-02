@@ -1,41 +1,18 @@
- "use client";
-
 import Link from "next/link";
-import * as React from "react";
-import confetti from "canvas-confetti";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 export default function PaySuccessPage() {
-  React.useEffect(() => {
-    const colors = ["#8b5cf6", "#10b981", "#3b82f6", "#0ea5e9"];
-    const end = Date.now() + 900;
-
-    const frame = () => {
-      confetti({
-        particleCount: 5,
-        spread: 70,
-        startVelocity: 32,
-        ticks: 120,
-        origin: { y: 0.65 },
-        colors,
-      });
-      if (Date.now() < end) requestAnimationFrame(frame);
-    };
-
-    frame();
-  }, []);
-
   return (
-    <div className="min-h-screen bg-[#fbfbff] px-6 py-16">
+    <div className="min-h-screen bg-background text-foreground px-6 py-16">
       <div className="mx-auto w-full max-w-md">
-        <Card className="bg-white/80 backdrop-blur">
+        <Card className="bg-white/80 backdrop-blur dark:bg-zinc-950/30">
           <CardHeader>
-            <div className="text-xl font-semibold tracking-tight text-zinc-900">
+            <div className="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
               Payment successful
             </div>
-            <div className="mt-1 text-sm text-zinc-500">
+            <div className="mt-1 text-sm text-zinc-500 dark:text-zinc-300">
               Thanks — you can safely close this tab.
             </div>
           </CardHeader>
@@ -56,4 +33,3 @@ export default function PaySuccessPage() {
     </div>
   );
 }
-

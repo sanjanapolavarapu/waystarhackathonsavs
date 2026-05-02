@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { getSupabaseServerClient } from "@/lib/supabase-server";
 import { fromPaymentPagesRow, toPaymentPagesRow } from "@/lib/paymentPagesDb";
 import { fromCustomFieldRow, toCustomFieldRow } from "@/lib/customFieldsDb";
 
 export async function GET(_req, { params }) {
   const { slug } = await params;
 
-  const supabase = getSupabaseAdmin();
+  const supabase = getSupabaseServerClient();
   if (!supabase) {
     return NextResponse.json(
       { error: "Missing Supabase env vars on server." },
@@ -54,7 +54,7 @@ export async function PUT(req, { params }) {
   const page = body?.page;
   if (!page) return NextResponse.json({ error: "Missing page" }, { status: 400 });
 
-  const supabase = getSupabaseAdmin();
+  const supabase = getSupabaseServerClient();
   if (!supabase) {
     return NextResponse.json(
       { error: "Missing Supabase env vars on server." },

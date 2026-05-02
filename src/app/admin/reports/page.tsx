@@ -3,8 +3,6 @@
 import * as React from "react";
 import { Download } from "lucide-react";
 
-import { getSupabaseClient } from "@/lib/supabase";
-import { getSelectedOrgId } from "@/lib/org";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -99,95 +97,169 @@ function toCsv(rows: Record<string, string | number | undefined>[]) {
   return lines.join("\n");
 }
 
+type TxRow = {
+  id: string;
+  page_slug?: string | null;
+  created_at?: string | null;
+  status?: string | null;
+  payment_method?: string | null;
+  amount?: number | null;
+  amount_cents?: number | null;
+  payer_email?: string | null;
+  gl_code?: string | null;
+};
+
+type VisitRow = {
+  id: string;
+  page_slug?: string | null;
+  visited_at?: string | null;
+  form_started?: boolean | null;
+};
+
+/** Static demo data — replace with live Supabase/API when schema is stable. */
+const MOCK_TRANSACTIONS: TxRow[] = (() => {
+  const weekStart = new Date();
+  weekStart.setHours(12, 0, 0, 0);
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+  const at = (dayOffset: number, hour: number, minute = 0) => {
+    const d = new Date(weekStart);
+    d.setDate(weekStart.getDate() + dayOffset);
+    d.setHours(hour, minute, 0, 0);
+    return d.toISOString();
+  };
+  return [
+    {
+      id: "pi_demo_vidhi_001",
+      page_slug: "vidhi-tests",
+      created_at: at(4, 14, 22),
+      status: "succeeded",
+      payment_method: "card",
+      amount: 9,
+      payer_email: "payer1@example.com",
+      gl_code: "4100-110-900",
+    },
+    {
+      id: "pi_demo_anika_002",
+      page_slug: "anikas-fashion-store",
+      created_at: at(4, 11, 5),
+      status: "succeeded",
+      payment_method: "card",
+      amount: 45,
+      payer_email: "style@example.com",
+      gl_code: "2100-330-100",
+    },
+    {
+      id: "pi_demo_consult_003",
+      page_slug: "consulting-session",
+      created_at: at(3, 16, 40),
+      status: "succeeded",
+      payment_method: "card+cashapp",
+      amount: 189,
+      payer_email: "biz@example.com",
+      gl_code: "1000-200-300",
+    },
+    {
+      id: "pi_demo_vidhi_004",
+      page_slug: "vidhi-tests",
+      created_at: at(3, 9, 15),
+      status: "failed",
+      payment_method: "card",
+      amount: 25,
+      payer_email: "declined@example.com",
+      gl_code: "4100-110-900",
+    },
+    {
+      id: "pi_demo_donation_005",
+      page_slug: "donation",
+      created_at: at(2, 20, 0),
+      status: "succeeded",
+      payment_method: "card",
+      amount: 50,
+      payer_email: "donor@example.com",
+      gl_code: "5000-010-050",
+    },
+    {
+      id: "pi_demo_vidhi_006",
+      page_slug: "vidhi-tests",
+      created_at: at(2, 8, 30),
+      status: "succeeded",
+      payment_method: "card",
+      amount: 12.5,
+      payer_email: "quick@example.com",
+      gl_code: "4100-110-900",
+    },
+    {
+      id: "pi_demo_anika_007",
+      page_slug: "anikas-fashion-store",
+      created_at: at(1, 13, 50),
+      status: "succeeded",
+      payment_method: "klarna",
+      amount: 120,
+      payer_email: "klarna.user@example.com",
+      gl_code: "2100-330-100",
+    },
+    {
+      id: "pi_demo_pending_008",
+      page_slug: "vidhi-tests",
+      created_at: at(4, 19, 1),
+      status: "requires_payment_method",
+      payment_method: null,
+      amount: 15,
+      payer_email: "abandoned@example.com",
+      gl_code: "4100-110-900",
+    },
+    {
+      id: "pi_demo_consult_009",
+      page_slug: "consulting-session",
+      created_at: at(0, 10, 0),
+      status: "succeeded",
+      payment_method: "card",
+      amount: 250,
+      payer_email: "retainer@example.com",
+      gl_code: "1000-200-300",
+    },
+    {
+      id: "pi_demo_fail_010",
+      page_slug: "donation",
+      created_at: at(1, 22, 10),
+      status: "canceled",
+      payment_method: "card",
+      amount: 0,
+      payer_email: "timeout@example.com",
+      gl_code: "5000-010-050",
+    },
+  ];
+})();
+
+const MOCK_VISITS: VisitRow[] = (() => {
+  const slugs = ["vidhi-tests", "anikas-fashion-store", "consulting-session", "donation"];
+  const rows: VisitRow[] = [];
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  start.setDate(start.getDate() - start.getDay());
+  for (let i = 0; i < 248; i += 1) {
+    const d = new Date(start);
+    d.setDate(start.getDate() + (i % 7));
+    d.setHours(8 + (i % 10), (i * 11) % 60, 0, 0);
+    rows.push({
+      id: `visit-demo-${i}`,
+      page_slug: slugs[i % slugs.length],
+      visited_at: d.toISOString(),
+      form_started: i % 3 !== 0,
+    });
+  }
+  return rows;
+})();
+
 export default function ReportsUi() {
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState<string | null>(null);
-  const [tx, setTx] = React.useState<
-    {
-      id: string;
-      page_slug?: string | null;
-      created_at?: string | null;
-      status?: string | null;
-      payment_method?: string | null;
-      amount?: number | null;
-      amount_cents?: number | null;
-      payer_email?: string | null;
-      gl_code?: string | null;
-    }[]
-  >([]);
-  const [visits, setVisits] = React.useState<
-    {
-      id: string;
-      page_slug?: string | null;
-      visited_at?: string | null;
-    }[]
-  >([]);
-  const [visitsWarning, setVisitsWarning] = React.useState<string | null>(null);
+  const loading = false;
+  const error: string | null = null;
+  const visitsWarning: string | null = null;
+  const [tx] = React.useState<TxRow[]>(MOCK_TRANSACTIONS);
+  const [visits] = React.useState<VisitRow[]>(MOCK_VISITS);
   const [filterDateRange, setFilterDateRange] = React.useState("");
   const [filterPageSlug, setFilterPageSlug] = React.useState("");
   const [filterStatus, setFilterStatus] = React.useState("");
-
-  React.useEffect(() => {
-    let mounted = true;
-    const supabase = getSupabaseClient();
-    const orgId = getSelectedOrgId();
-
-    if (!supabase) {
-      queueMicrotask(() => {
-        if (!mounted) return;
-        setError("Supabase isn’t configured.");
-        setLoading(false);
-      });
-      return;
-    }
-
-    if (!orgId) {
-      queueMicrotask(() => {
-        if (!mounted) return;
-        setError("Select or join an organization to view reports.");
-        setLoading(false);
-      });
-      return;
-    }
-
-    void (async () => {
-      setLoading(true);
-      setError(null);
-      const { data, error } = await supabase
-        .from("transactions")
-        .select("id, page_slug, created_at, status, payment_method, amount, amount_cents, payer_email, gl_code")
-        .order("created_at", { ascending: false });
-
-      if (!mounted) return;
-      if (error) {
-        setError(error.message);
-        setTx([]);
-        setLoading(false);
-        return;
-      }
-      setTx((data as typeof tx) ?? []);
-
-      const visitsRes = await supabase
-        .from("page_visits")
-        .select("id, page_slug, visited_at")
-        .order("visited_at", { ascending: false });
-      if (visitsRes.error) {
-        setVisits([]);
-        setVisitsWarning(
-          "Page visit tracking is unavailable. Create the page_visits table to enable funnel analytics.",
-        );
-      } else {
-        setVisits((visitsRes.data as typeof visits) ?? []);
-        setVisitsWarning(null);
-      }
-
-      setLoading(false);
-    })();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
 
   const dateRangeParsed = React.useMemo(
     () => parseDateRangeInput(filterDateRange),
@@ -225,7 +297,7 @@ export default function ReportsUi() {
   }, 0);
   const avg = totalPayments ? totalAmount / totalPayments : 0;
   const funnelVisited = filteredVisits.length;
-  const funnelStarted = filteredTx.length;
+  const funnelStarted = filteredVisits.filter((v) => Boolean(v.form_started)).length;
   const funnelPaid = successfulTx.length;
   const conversionRateText = pct(funnelPaid, funnelVisited);
   const failedRateText = pct(failedTx.length, successfulTx.length + failedTx.length);
@@ -285,8 +357,10 @@ export default function ReportsUi() {
     <div className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <div className="text-xl font-semibold tracking-tight text-zinc-900">Reporting</div>
-          <div className="mt-1 text-sm text-zinc-500">
+          <div className="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
+            Reporting
+          </div>
+          <div className="mt-1 text-sm text-zinc-500 dark:text-zinc-300">
             Conversion, payment volume, and failure analytics.
           </div>
         </div>
@@ -301,8 +375,8 @@ export default function ReportsUi() {
       </div>
 
       {error ? (
-        <Card className="bg-white/80 backdrop-blur">
-          <CardContent className="p-5 text-sm text-zinc-700">
+        <Card className="bg-white/80 backdrop-blur dark:bg-zinc-950/30">
+          <CardContent className="p-5 text-sm text-zinc-700 dark:text-zinc-300">
             {error}
           </CardContent>
         </Card>
@@ -314,24 +388,34 @@ export default function ReportsUi() {
       ) : null}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Card className="bg-white/80 backdrop-blur lg:col-span-2">
+        <Card className="bg-white/80 backdrop-blur lg:col-span-2 dark:bg-zinc-950/30">
           <CardHeader>
-            <div className="text-sm font-semibold text-zinc-900">Conversion Funnel</div>
-            <div className="mt-1 text-sm text-zinc-500">Who visited, started checkout, and paid.</div>
+            <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+              Conversion Funnel
+            </div>
+            <div className="mt-1 text-sm text-zinc-500 dark:text-zinc-300">
+              Who visited, started checkout, and paid.
+            </div>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="grid grid-cols-3 gap-3 text-center">
-              <div className="rounded-2xl border border-zinc-200 bg-white p-3">
-                <div className="text-xs text-zinc-500">Visited</div>
-                <div className="mt-1 text-2xl font-semibold text-zinc-900">{loading ? "—" : funnelVisited}</div>
+              <div className="rounded-2xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-950/40">
+                <div className="text-xs text-zinc-500 dark:text-zinc-400">Visited</div>
+                <div className="mt-1 text-2xl font-semibold text-zinc-900 dark:text-zinc-100">
+                  {loading ? "—" : funnelVisited}
+                </div>
               </div>
-              <div className="rounded-2xl border border-zinc-200 bg-white p-3">
-                <div className="text-xs text-zinc-500">Started form</div>
-                <div className="mt-1 text-2xl font-semibold text-zinc-900">{loading ? "—" : funnelStarted}</div>
+              <div className="rounded-2xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-950/40">
+                <div className="text-xs text-zinc-500 dark:text-zinc-400">Started form</div>
+                <div className="mt-1 text-2xl font-semibold text-zinc-900 dark:text-zinc-100">
+                  {loading ? "—" : funnelStarted}
+                </div>
               </div>
-              <div className="rounded-2xl border border-zinc-200 bg-white p-3">
-                <div className="text-xs text-zinc-500">Paid</div>
-                <div className="mt-1 text-2xl font-semibold text-zinc-900">{loading ? "—" : funnelPaid}</div>
+              <div className="rounded-2xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-950/40">
+                <div className="text-xs text-zinc-500 dark:text-zinc-400">Paid</div>
+                <div className="mt-1 text-2xl font-semibold text-zinc-900 dark:text-zinc-100">
+                  {loading ? "—" : funnelPaid}
+                </div>
               </div>
             </div>
             <div className="text-sm font-medium text-indigo-700">
@@ -339,16 +423,20 @@ export default function ReportsUi() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/80 backdrop-blur">
+        <Card className="bg-white/80 backdrop-blur dark:bg-zinc-950/30">
           <CardHeader>
-            <div className="text-sm font-semibold text-zinc-900">Failed Payment Rate</div>
-            <div className="mt-1 text-sm text-zinc-500">How many payment attempts failed.</div>
+            <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+              Failed Payment Rate
+            </div>
+            <div className="mt-1 text-sm text-zinc-500 dark:text-zinc-300">
+              How many payment attempts failed.
+            </div>
           </CardHeader>
           <CardContent className="space-y-2">
-            <div className="text-sm text-zinc-700">
+            <div className="text-sm text-zinc-700 dark:text-zinc-300">
               <span className="font-semibold">{loading ? "—" : successfulTx.length}</span> succeeded
             </div>
-            <div className="text-sm text-zinc-700">
+            <div className="text-sm text-zinc-700 dark:text-zinc-300">
               <span className="font-semibold">{loading ? "—" : failedTx.length}</span> failed
             </div>
             <div className="text-sm font-medium text-rose-700">
@@ -358,10 +446,14 @@ export default function ReportsUi() {
         </Card>
       </div>
 
-      <Card className="bg-white/80 backdrop-blur">
+      <Card className="bg-white/80 backdrop-blur dark:bg-zinc-950/30">
         <CardHeader>
-          <div className="text-sm font-semibold text-zinc-900">Daily Payment Volume (Sun-Sat)</div>
-          <div className="mt-1 text-sm text-zinc-500">Successful payments for the current week.</div>
+          <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+            Daily Payment Volume (Sun-Sat)
+          </div>
+          <div className="mt-1 text-sm text-zinc-500 dark:text-zinc-300">
+            Successful payments for the current week.
+          </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-7 gap-3 items-end h-48">
@@ -369,9 +461,9 @@ export default function ReportsUi() {
               const height = maxDayAmount > 0 ? Math.max(12, Math.round((d.amount / maxDayAmount) * 140)) : 12;
               return (
                 <div key={d.key} className="flex flex-col items-center gap-2">
-                  <div className="text-[11px] text-zinc-500">{fmtMoney(d.amount)}</div>
+                  <div className="text-[11px] text-zinc-500 dark:text-zinc-400">{fmtMoney(d.amount)}</div>
                   <div className="w-full rounded-t-xl bg-indigo-500/80" style={{ height }} />
-                  <div className="text-xs text-zinc-600">{d.label}</div>
+                  <div className="text-xs text-zinc-600 dark:text-zinc-300">{d.label}</div>
                 </div>
               );
             })}
@@ -380,28 +472,30 @@ export default function ReportsUi() {
       </Card>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Card className="bg-white/80 backdrop-blur">
+        <Card className="bg-white/80 backdrop-blur dark:bg-zinc-950/30">
           <CardContent className="p-5">
-            <div className="text-xs font-medium text-zinc-500">Total payments</div>
-            <div className="mt-2 text-2xl font-semibold tracking-tight text-zinc-900">
+            <div className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Total payments</div>
+            <div className="mt-2 text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
               {loading ? "—" : totalPayments}
             </div>
             <div className="mt-1 text-xs text-indigo-600">Success only</div>
           </CardContent>
         </Card>
-        <Card className="bg-white/80 backdrop-blur">
+        <Card className="bg-white/80 backdrop-blur dark:bg-zinc-950/30">
           <CardContent className="p-5">
-            <div className="text-xs font-medium text-zinc-500">Total amount collected</div>
-            <div className="mt-2 text-2xl font-semibold tracking-tight text-zinc-900">
+            <div className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+              Total amount collected
+            </div>
+            <div className="mt-2 text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
               {loading ? "—" : fmtMoney(totalAmount)}
             </div>
             <div className="mt-1 text-xs text-indigo-600">Across all pages</div>
           </CardContent>
         </Card>
-        <Card className="bg-white/80 backdrop-blur">
+        <Card className="bg-white/80 backdrop-blur dark:bg-zinc-950/30">
           <CardContent className="p-5">
-            <div className="text-xs font-medium text-zinc-500">Average payment</div>
-            <div className="mt-2 text-2xl font-semibold tracking-tight text-zinc-900">
+            <div className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Average payment</div>
+            <div className="mt-2 text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
               {loading ? "—" : fmtMoney(avg)}
             </div>
             <div className="mt-1 text-xs text-indigo-600">Success only</div>
@@ -409,15 +503,16 @@ export default function ReportsUi() {
         </Card>
       </div>
 
-      <Card className="bg-white/80 backdrop-blur">
+      <Card className="bg-white/80 backdrop-blur dark:bg-zinc-950/30">
         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <div className="text-sm font-semibold text-zinc-900">Transactions</div>
-            <div className="mt-1 text-sm text-zinc-500">
+            <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Transactions</div>
+            <div className="mt-1 text-sm text-zinc-500 dark:text-zinc-300">
               {filtersActive ? (
                 <>
-                  Showing <span className="font-medium text-zinc-700">{filteredTx.length}</span> of{" "}
-                  <span className="font-medium text-zinc-700">{tx.length}</span> rows. Date uses{" "}
+                  Showing{" "}
+                  <span className="font-medium text-zinc-700 dark:text-zinc-200">{filteredTx.length}</span> of{" "}
+                  <span className="font-medium text-zinc-700 dark:text-zinc-200">{tx.length}</span> rows. Date uses{" "}
                   <span className="font-mono text-xs">YYYY-MM-DD</span> or{" "}
                   <span className="font-mono text-xs">start..end</span> (inclusive).
                 </>
@@ -456,8 +551,8 @@ export default function ReportsUi() {
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-sm">
-              <thead className="border-t border-zinc-200 bg-zinc-50/70">
-                <tr className="text-xs font-medium text-zinc-600">
+              <thead className="border-t border-zinc-200 bg-zinc-50/70 dark:border-zinc-800 dark:bg-zinc-900/30">
+                <tr className="text-xs font-medium text-zinc-600 dark:text-zinc-300">
                   <th className="px-5 py-3">Transaction</th>
                   <th className="px-5 py-3">Page</th>
                   <th className="px-5 py-3">Status</th>
@@ -466,10 +561,10 @@ export default function ReportsUi() {
                   <th className="px-5 py-3 text-right">Amount</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-200">
+              <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
                 {!loading && filteredTx.length === 0 ? (
                   <tr>
-                    <td className="px-5 py-10 text-center text-sm text-zinc-500" colSpan={6}>
+                    <td className="px-5 py-10 text-center text-sm text-zinc-500 dark:text-zinc-400" colSpan={6}>
                       {tx.length === 0
                         ? "No transactions loaded yet."
                         : "No transactions match these filters."}
@@ -477,14 +572,14 @@ export default function ReportsUi() {
                   </tr>
                 ) : null}
                 {filteredTx.map((t) => (
-                  <tr key={t.id} className="bg-white/60">
+                  <tr key={t.id} className="bg-white/60 dark:bg-zinc-950/20">
                     <td className="px-5 py-4">
-                      <div className="font-mono text-xs text-zinc-700">{t.id}</div>
-                      <div className="text-xs text-zinc-500">
+                      <div className="font-mono text-xs text-zinc-700 dark:text-zinc-300">{t.id}</div>
+                      <div className="text-xs text-zinc-500 dark:text-zinc-400">
                         {t.created_at ? new Date(t.created_at).toLocaleString() : "—"}
                       </div>
                     </td>
-                    <td className="px-5 py-4 text-zinc-800">
+                    <td className="px-5 py-4 text-zinc-800 dark:text-zinc-200">
                       <div className="font-medium">{t.page_slug ?? "—"}</div>
                     </td>
                     <td className="px-5 py-4">
@@ -496,9 +591,9 @@ export default function ReportsUi() {
                         <Badge variant="warning">Pending</Badge>
                       )}
                     </td>
-                    <td className="px-5 py-4 text-zinc-700">{t.payment_method ?? "—"}</td>
-                    <td className="px-5 py-4 text-zinc-700">{t.gl_code ?? "—"}</td>
-                    <td className="px-5 py-4 text-right font-semibold text-zinc-900">
+                    <td className="px-5 py-4 text-zinc-700 dark:text-zinc-300">{t.payment_method ?? "—"}</td>
+                    <td className="px-5 py-4 text-zinc-700 dark:text-zinc-300">{t.gl_code ?? "—"}</td>
+                    <td className="px-5 py-4 text-right font-semibold text-zinc-900 dark:text-zinc-100">
                       {fmtMoney(
                         typeof t.amount === "number"
                           ? t.amount
@@ -515,18 +610,18 @@ export default function ReportsUi() {
         </CardContent>
       </Card>
 
-      <Card className="bg-white/80 backdrop-blur">
+      <Card className="bg-white/80 backdrop-blur dark:bg-zinc-950/30">
         <CardHeader>
-          <div className="text-sm font-semibold text-zinc-900">Breakdowns</div>
-          <div className="mt-1 text-sm text-zinc-500">
+          <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Breakdowns</div>
+          <div className="mt-1 text-sm text-zinc-500 dark:text-zinc-300">
             Successful volume by GL code and attempt counts by payment method (uses the same filters as
             above).
           </div>
         </CardHeader>
         <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div className="rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm">
-            <div className="text-xs font-medium text-zinc-600">By GL code</div>
-            <div className="mt-3 space-y-2 text-sm text-zinc-700">
+          <div className="rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/40">
+            <div className="text-xs font-medium text-zinc-600 dark:text-zinc-300">By GL code</div>
+            <div className="mt-3 space-y-2 text-sm text-zinc-700 dark:text-zinc-300">
               {Array.from(
                 filteredTx.reduce((m, t) => {
                   const k = t.gl_code ?? "—";
@@ -548,9 +643,9 @@ export default function ReportsUi() {
               ))}
             </div>
           </div>
-          <div className="rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm">
-            <div className="text-xs font-medium text-zinc-600">By payment method</div>
-            <div className="mt-3 space-y-2 text-sm text-zinc-700">
+          <div className="rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/40">
+            <div className="text-xs font-medium text-zinc-600 dark:text-zinc-300">By payment method</div>
+            <div className="mt-3 space-y-2 text-sm text-zinc-700 dark:text-zinc-300">
               {Array.from(
                 filteredTx.reduce((m, t) => {
                   const k = t.payment_method ?? "unknown";

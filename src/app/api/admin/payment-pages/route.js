@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { getSupabaseServerClient } from "@/lib/supabase-server";
 import { fromPaymentPagesRow, toPaymentPagesRow } from "@/lib/paymentPagesDb";
 
 export async function GET() {
-  const supabase = getSupabaseAdmin();
+  const supabase = getSupabaseServerClient();
   if (!supabase) {
     return NextResponse.json(
       { error: "Missing Supabase env vars on server." },
@@ -28,7 +28,7 @@ export async function GET() {
 }
 
 export async function POST(req) {
-  const supabase = getSupabaseAdmin();
+  const supabase = getSupabaseServerClient();
   if (!supabase) {
     return NextResponse.json(
       { error: "Missing Supabase env vars on server." },
@@ -53,7 +53,7 @@ export async function POST(req) {
     return NextResponse.json(
       {
         error:
-          "Missing admin_id. Set SUPABASE_DEFAULT_ADMIN_ID in .env.local to an existing auth.users id.",
+          "Missing admin_id. Set SUPABASE_DEFAULT_ADMIN_ID (or DEFAULT_ADMIN_ID) to an existing auth.users id. On Vercel, also ensure SUPABASE_SERVICE_ROLE_KEY is set for server-side writes.",
       },
       { status: 500 },
     );

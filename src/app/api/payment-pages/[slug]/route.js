@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSupabaseServerClient } from "@/lib/supabase-server";
+import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { fromPaymentPagesRow } from "@/lib/paymentPagesDb";
 import { fromCustomFieldRow } from "@/lib/customFieldsDb";
 
@@ -7,10 +7,7 @@ import { fromCustomFieldRow } from "@/lib/customFieldsDb";
 export async function GET(_req, { params }) {
   const { slug } = await params;
 
-  // Use a server-side Supabase client. Prefers service role key when present,
-  // but falls back to the anon key so public pay pages can work on Vercel even
-  // when only NEXT_PUBLIC_SUPABASE_* vars are configured.
-  const supabase = getSupabaseServerClient();
+  const supabase = getSupabaseAdmin();
   if (!supabase) {
     return NextResponse.json(
       { error: "Missing Supabase env vars on server." },
