@@ -333,6 +333,8 @@ export function PayClient({
       return;
     }
 
+    notifyFormStarted();
+
     setIsStarting(true);
     try {
       // Persist the payload so CheckoutForm can finalize /api/payments/complete after Stripe confirms.

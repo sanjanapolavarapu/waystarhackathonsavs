@@ -13,8 +13,7 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    // amount must be in CENTS (e.g., $25.00 = 2500)
-    const { amount, payerEmail, payerName, pageSlug } = body; 
+    const { amount, payerEmail, payerName, pageSlug } = body;
 
     if (!Number.isFinite(amount) || amount <= 0) {
       return NextResponse.json({ error: 'Invalid amount.' }, { status: 400 });
@@ -23,59 +22,72 @@ export async function POST(request) {
       return NextResponse.json({ error: "Missing pageSlug." }, { status: 400 });
     }
 
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: amount, 
-      currency: 'usd',
-      receipt_email: payerEmail, // Hits the email confirmation stretch goal!
-      metadata: {
-        payer_email: payerEmail ?? '',
-        payer_name: typeof payerName === "string" ? payerName : "",
-        page_slug: pageSlug ?? "",
-      },
-      automatic_payment_methods: {
-        enabled: true,
-      },
-    });
+    const slugTrim = pageSlug.trim();
 
-    // Persist a transaction row in Supabase so analytics cards can update.
-    // We try a "rich" upsert first; if your schema doesn't have these columns yet,
-    // we fall back to only the columns we know are queried in the UI.
-    const amountDollars = paymentIntent.amount ? paymentIntent.amount / 100 : amount / 100;
     let pageId = null;
     let organizationId = null;
+    let primaryGl = null;
 
     const supabaseAdmin = getSupabaseAdmin();
     if (supabaseAdmin) {
       const { data: pageRow } = await supabaseAdmin
         .from("payment_pages")
-        .select("id, organization_id")
-        .eq("slug", pageSlug)
+        .select("id, organization_id, gl_codes")
+        .eq("slug", slugTrim)
         .maybeSingle();
       pageId = pageRow?.id ?? null;
       organizationId = pageRow?.organization_id ?? null;
+      const gcs = pageRow?.gl_codes;
+      primaryGl = Array.isArray(gcs) && gcs.length ? String(gcs[0]) : null;
     }
+
+    const metadata = {
+      payer_email: payerEmail ? String(payerEmail) : '',
+      payer_name: typeof payerName === "string" ? payerName : "",
+      page_slug: slugTrim,
+      ...(pageId ? { page_id: String(pageId) } : {}),
+      ...(organizationId ? { organization_id: String(organizationId) } : {}),
+    };
+
+    const piCreate = {
+      amount,
+      currency: 'usd',
+      metadata,
+      automatic_payment_methods: {
+        enabled: true,
+      },
+    };
+    if (typeof payerEmail === 'string' && payerEmail.trim()) {
+      piCreate.receipt_email = payerEmail.trim();
+    }
+
+    const paymentIntent = await stripe.paymentIntents.create(piCreate);
+
+    const amountDollars = paymentIntent.amount ? paymentIntent.amount / 100 : amount / 100;
+
     const baseRow = {
       amount: amountDollars,
       status: paymentIntent.status,
-      page_slug: pageSlug,
-      ...(pageId ? { page_id: pageId } : {}),
-      ...(organizationId ? { organization_id: organizationId } : {}),
-    };
-
-    const richRow = {
-      ...baseRow,
       stripe_payment_intent_id: paymentIntent.id,
       payer_email: payerEmail ?? null,
-      currency: paymentIntent.currency ?? 'usd',
+      ...(pageId ? { page_id: pageId } : {}),
+      ...(organizationId ? { organization_id: organizationId } : {}),
+      ...(primaryGl ? { gl_code: primaryGl } : {}),
     };
 
     if (supabaseAdmin) {
       const richUpsert = await supabaseAdmin
         .from('transactions')
-        .upsert(richRow, { onConflict: 'stripe_payment_intent_id' });
+        .upsert(baseRow, { onConflict: 'stripe_payment_intent_id' });
 
       if (richUpsert.error) {
-        const fallbackInsert = await supabaseAdmin.from('transactions').insert(baseRow);
+        const slimRow = {
+          amount: amountDollars,
+          status: paymentIntent.status,
+          ...(pageId ? { page_id: pageId } : {}),
+          ...(organizationId ? { organization_id: organizationId } : {}),
+        };
+        const fallbackInsert = await supabaseAdmin.from('transactions').insert(slimRow);
         if (fallbackInsert.error) {
           console.error('Supabase insert error:', fallbackInsert.error);
         } else {
@@ -86,16 +98,15 @@ export async function POST(request) {
       console.warn("Supabase env missing; skipping transaction persistence.");
     }
 
-    // Return the secret to the frontend so it can render the form
     return NextResponse.json({
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
     });
-    
+
   } catch (error) {
     console.error("Stripe Error:", error);
     return NextResponse.json(
-      { error: "Failed to initialize payment." }, 
+      { error: "Failed to initialize payment." },
       { status: 500 }
     );
   }

@@ -56,10 +56,10 @@ export default function AdminPagesList() {
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <div className="text-xl font-semibold tracking-tight text-zinc-900">
+          <div className="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
             Payment Pages
           </div>
-          <div className="mt-1 text-sm text-zinc-500">
+          <div className="mt-1 text-sm text-zinc-500 dark:text-zinc-300">
             Create, configure, and share Quick Payment Pages.
           </div>
         </div>
