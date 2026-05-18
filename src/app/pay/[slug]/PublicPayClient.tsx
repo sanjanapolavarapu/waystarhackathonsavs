@@ -175,7 +175,7 @@ export function PublicPayClient({ slug }: { slug: string }) {
           ) : null}
         </div>
 
-        <Card className="mt-6 overflow-hidden bg-white/80 backdrop-blur dark:bg-zinc-950/30 dark:border-zinc-800">
+        <Card className="mt-6 overflow-hidden dark:border-zinc-800">
           <div className="bg-zinc-50 px-6 py-5 border-b border-zinc-200 dark:bg-zinc-900/40 dark:border-zinc-800">
             <div className="text-xs font-medium text-zinc-500 dark:text-zinc-400 text-center">Payment Amount</div>
             <div className="mt-1 text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 text-center">

@@ -242,12 +242,12 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <div className="text-xl font-semibold tracking-tight text-zinc-900">
+            <div className="text-xl font-semibold tracking-tight text-heading">
               Edit page
             </div>
             {page.isActive ? <Badge variant="success">Active</Badge> : <Badge variant="warning">Disabled</Badge>}
           </div>
-          <div className="mt-1 text-sm text-zinc-500">
+          <div className="mt-1 text-sm text-subheading">
             UI-only editor — hook up save/publish actions later.
           </div>
         </div>
@@ -257,6 +257,9 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
           <Link href="/admin/pages">
             <Button variant="secondary">Back</Button>
           </Link>
+          <Button variant="ghost" onClick={handlePublish} disabled={saving}>
+            {saving ? "Saving..." : "Save draft"}
+          </Button>
           <Button variant="primary" onClick={handlePublish} disabled={saving || !glValidation.valid}>
             {saving ? "Saving..." : "Publish"}
           </Button>
@@ -265,13 +268,13 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.05fr_0.95fr]">
         <div className="relative z-10 space-y-5">
-          <Card className="bg-white/80 backdrop-blur">
+          <Card className="admin-editor-card admin-data-card overflow-hidden border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950/40">
             <CardHeader className="flex flex-row items-start justify-between">
               <div>
-                <div className="text-sm font-semibold tracking-tight text-zinc-900">
+                <div className="text-sm font-semibold tracking-tight text-heading">
                   Payment Page Configuration
                 </div>
-                <div className="mt-1 text-sm text-zinc-500">Live preview updates as you edit</div>
+                <div className="mt-1 text-sm text-subheading">Live preview updates as you edit</div>
               </div>
               <Button variant="ghost" className="h-9 px-3 text-zinc-700 hover:bg-zinc-100/70">
                 <Settings2 className="h-4 w-4" />
@@ -281,7 +284,7 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
               <Section
                 title="Branding & Styling"
                 icon={
-                  <div className="h-9 w-9 rounded-2xl bg-indigo-50 border border-indigo-100 grid place-items-center text-indigo-700 font-semibold">
+                  <div className="h-9 w-9 rounded-xl bg-violet-100 border border-violet-200 grid place-items-center text-sm font-semibold text-violet-700">
                     C
                   </div>
                 }
@@ -295,10 +298,10 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
                         type="button"
                         onClick={() => setPage((p) => ({ ...p, brandColor: c }))}
                         className={cn(
-                          "h-9 w-14 rounded-2xl border transition-all hover:-translate-y-[1px]",
+                          "h-9 w-14 rounded-lg border transition-all hover:-translate-y-px",
                           c === page.brandColor
-                            ? "border-zinc-900/10 ring-2 ring-indigo-500/30 shadow-sm"
-                            : "border-white/50 shadow-sm hover:shadow-md",
+                            ? "border-zinc-300 ring-2 ring-sky-500/40 shadow-sm"
+                            : "border-zinc-200/80 shadow-sm hover:shadow-md",
                         )}
                         style={{ backgroundColor: c }}
                         aria-label={`Set brand color ${c}`}
@@ -481,8 +484,8 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
                       <div
                         key={f.id}
                         className={cn(
-                          "relative z-10 space-y-3 rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm transition hover:shadow-md",
-                          newFieldId === f.id && "border-indigo-300 ring-2 ring-indigo-200/70",
+                          "admin-editor-inner relative z-10 space-y-3 rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm transition hover:shadow-md dark:border-zinc-800 dark:bg-zinc-950/30",
+                          newFieldId === f.id && "border-violet-300 ring-2 ring-violet-200/70",
                         )}
                       >
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -725,16 +728,16 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
             </CardContent>
           </Card>
 
-          <Card className="bg-white/80 backdrop-blur">
+          <Card className="admin-editor-card admin-data-card overflow-hidden border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950/40">
             <CardHeader>
-              <div className="text-sm font-semibold text-zinc-900">Distribution</div>
-              <div className="mt-1 text-sm text-zinc-500">
+              <div className="text-sm font-semibold text-heading">Distribution</div>
+              <div className="mt-1 text-sm text-subheading">
                 Copy the public URL, iframe snippet, or show QR.
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 shadow-sm">
-                <div className="text-xs font-medium text-zinc-600">Public URL</div>
+              <div className="admin-editor-inner rounded-2xl border border-zinc-200 bg-white px-4 py-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/30">
+                <div className="text-xs font-medium text-subheading">Public URL</div>
                 <div className="mt-1 flex items-center justify-between gap-3">
                   <div className="min-w-0 font-mono text-xs text-zinc-700 truncate">
                     {publicUrl}
@@ -752,8 +755,8 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 shadow-sm">
-                <div className="text-xs font-medium text-zinc-600">Embeddable iframe</div>
+              <div className="admin-editor-inner rounded-2xl border border-zinc-200 bg-white px-4 py-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/30">
+                <div className="text-xs font-medium text-subheading">Embeddable iframe</div>
                 <div className="mt-2 rounded-xl border border-zinc-200 bg-zinc-50 p-3 font-mono text-[11px] text-zinc-700 overflow-x-auto">
                   {iframeSnippet}
                 </div>
@@ -771,7 +774,7 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 shadow-sm">
+              <div className="admin-editor-inner rounded-2xl border border-zinc-200 bg-white px-4 py-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/30">
                 <QRCodePanel url={publicUrl} title={page.title} />
               </div>
             </CardContent>
@@ -779,7 +782,7 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
         </div>
 
         <div className="relative z-0 h-fit lg:sticky lg:top-6 lg:pointer-events-none">
-          <PreviewShell brandColor={page.brandColor}>
+          <PreviewShell brandColor={page.brandColor} url={`yourdomain.com/pay/${page.slug}`}>
             <PaymentPreview page={page} />
           </PreviewShell>
         </div>
@@ -1218,11 +1221,11 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-3xl border border-zinc-200/70 bg-white/70 p-4 shadow-sm">
+    <div className="admin-editor-section rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/30">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           {icon}
-          <div className="text-sm font-semibold text-zinc-900">{title}</div>
+          <div className="text-sm font-semibold text-heading">{title}</div>
         </div>
         {action}
       </div>
@@ -1234,7 +1237,7 @@ function Section({
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-2">
-      <div className="text-xs font-medium text-zinc-600">{label}</div>
+      <div className="text-xs font-medium text-subheading">{label}</div>
       {children}
     </div>
   );
@@ -1242,21 +1245,26 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 function PreviewShell({
   brandColor,
+  url,
   children,
 }: {
   brandColor: string;
+  url: string;
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-[28px] border border-zinc-200/80 bg-white/75 backdrop-blur p-4 shadow-[0_20px_60px_-30px_rgba(2,6,23,0.22)]">
-      <div className="flex items-center justify-between rounded-2xl bg-zinc-50/80 border border-zinc-200 px-3 py-2">
-        <div className="flex gap-1.5" aria-hidden="true">
+    <div className="admin-editor-preview rounded-[28px] border border-zinc-200 bg-white p-4 shadow-[0_20px_60px_-30px_rgba(2,6,23,0.12)] dark:border-zinc-800 dark:bg-zinc-950/40 dark:shadow-none">
+      <div className="admin-editor-chrome flex items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900/30">
+        <div className="flex shrink-0 gap-1.5" aria-hidden="true">
           <div className="h-2.5 w-2.5 rounded-full bg-red-400/90" />
           <div className="h-2.5 w-2.5 rounded-full bg-yellow-300/90" />
           <div className="h-2.5 w-2.5 rounded-full bg-green-400/90" />
         </div>
+        <div className="admin-editor-url-bar min-w-0 flex-1 truncate rounded-lg border border-zinc-200 bg-white px-2 py-1 text-center text-[11px] text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950/40 dark:text-zinc-300">
+          {url}
+        </div>
         <div
-          className="h-2.5 w-10 rounded-full opacity-90"
+          className="h-2.5 w-10 shrink-0 rounded-full opacity-90"
           style={{ backgroundColor: brandColor }}
           aria-hidden="true"
         />

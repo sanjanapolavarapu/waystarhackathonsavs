@@ -1,24 +1,414 @@
 @import "tailwindcss";
 
+/* Tie dark: utilities to the theme toggle (.dark on html), not OS prefers-color-scheme */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #fbfbff;
-  --foreground: #0f172a;
+  --background: #f9fafb;
+  --foreground: #111827;
+  --surface: #ffffff;
+  --surface-muted: #f3f4f6;
+  --border: #e5e7eb;
+  --muted: #6b7280;
+  --brand: #0ea5e9;
+  --accent: #7c3aed;
+  --heading: #000000;
+  --subheading: #71717a;
 }
 
 .dark {
-  --background: #070A12;
-  --foreground: #E9ECF5;
+  --background: #070a12;
+  --foreground: #e9ecf5;
+  --surface: rgba(9, 9, 11, 0.4);
+  --surface-muted: rgba(24, 24, 27, 0.35);
+  --border: rgba(63, 63, 70, 0.55);
+  --muted: #a1a1aa;
+  --brand: #38bdf8;
+  --accent: #a78bfa;
+  --heading: #f4f4f5;
+  --subheading: #a1a1aa;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-border: var(--border);
+  --color-muted: var(--muted);
+  --color-brand: var(--brand);
+  --color-accent: var(--accent);
+  --color-heading: var(--heading);
+  --color-subheading: var(--subheading);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 html {
   color-scheme: light dark;
+}
+
+html:not(.dark) .text-heading {
+  color: #000000 !important;
+}
+
+html.dark .text-heading {
+  color: #f4f4f5 !important;
+}
+
+html:not(.dark) .text-subheading {
+  color: #71717a !important;
+}
+
+html.dark .text-subheading {
+  color: #a1a1aa !important;
+}
+
+.admin-shell .admin-data-card {
+  overflow: hidden;
+}
+
+/* Admin light-mode polish only (html:not(.dark)) */
+html:not(.dark) .admin-shell table tbody tr,
+html:not(.dark) .admin-shell table thead {
+  background-color: #ffffff !important;
+}
+
+html:not(.dark) .admin-shell table thead {
+  background-color: #f9fafb !important;
+}
+
+html:not(.dark) .admin-shell .admin-tab-nav {
+  background-color: #ffffff !important;
+  border-color: #e4e4e7 !important;
+}
+
+html:not(.dark) .admin-shell .admin-tab-link-inactive,
+html:not(.dark) .admin-shell .admin-tab-nav a:not([aria-current="page"]) {
+  background-color: transparent !important;
+  color: #52525b !important;
+}
+
+html:not(.dark) .admin-shell .admin-tab-link-inactive svg,
+html:not(.dark) .admin-shell .admin-tab-nav a:not([aria-current="page"]) svg {
+  color: #52525b !important;
+}
+
+html:not(.dark) .admin-shell .admin-tab-link-inactive:hover,
+html:not(.dark) .admin-shell .admin-tab-nav a:not([aria-current="page"]):hover {
+  background-color: #f4f4f5 !important;
+  color: #18181b !important;
+}
+
+html:not(.dark) .admin-shell .admin-tab-link-inactive:hover svg,
+html:not(.dark) .admin-shell .admin-tab-nav a:not([aria-current="page"]):hover svg {
+  color: #18181b !important;
+}
+
+html:not(.dark) .admin-shell .admin-org-switcher {
+  background-color: #ffffff !important;
+  border-color: #e4e4e7 !important;
+  color: #27272a !important;
+}
+
+html:not(.dark) .admin-shell .admin-org-switcher svg {
+  color: #71717a !important;
+}
+
+html:not(.dark) .admin-shell .admin-org-menu {
+  background-color: #ffffff !important;
+  border-color: #e4e4e7 !important;
+}
+
+html:not(.dark) .admin-shell .admin-org-menu-item {
+  color: #27272a !important;
+}
+
+html:not(.dark) .admin-shell .admin-org-menu-item:hover {
+  background-color: #f4f4f5 !important;
+}
+
+html:not(.dark) .admin-shell .admin-org-menu-item.bg-violet-50 {
+  background-color: #ede9fe !important;
+  color: #4c1d95 !important;
+}
+
+html:not(.dark) .admin-shell .admin-org-menu-item .rounded-full {
+  background-color: #ede9fe !important;
+  border-color: #a78bfa !important;
+  color: #4c1d95 !important;
+}
+
+html:not(.dark) .admin-shell .admin-org-menu-footer {
+  background-color: #f9fafb !important;
+  border-color: #e4e4e7 !important;
+}
+
+html:not(.dark) .admin-shell .admin-org-menu-action {
+  background-color: #ffffff !important;
+  border-color: #e4e4e7 !important;
+  color: #27272a !important;
+}
+
+html:not(.dark) .admin-shell .admin-org-menu-action:hover {
+  background-color: #f4f4f5 !important;
+  color: #18181b !important;
+}
+
+html:not(.dark) .admin-shell .admin-org-menu-danger {
+  background-color: #ffffff !important;
+  border-color: #fecaca !important;
+  color: #b91c1c !important;
+}
+
+html:not(.dark) .admin-shell .admin-org-menu-danger:hover {
+  background-color: #fef2f2 !important;
+  color: #991b1b !important;
+}
+
+html:not(.dark) .admin-shell .admin-theme-toggle {
+  background-color: #ffffff !important;
+  border-color: #e4e4e7 !important;
+  color: #3f3f46 !important;
+}
+
+html:not(.dark) .admin-shell .admin-theme-toggle:hover {
+  background-color: #f4f4f5 !important;
+  color: #18181b !important;
+}
+
+html:not(.dark) .admin-shell .admin-theme-toggle svg {
+  color: #3f3f46 !important;
+}
+
+html:not(.dark) .admin-shell [data-badge-variant="success"] {
+  background-color: #ede9fe !important;
+  border-color: #a78bfa !important;
+  color: #4c1d95 !important;
+}
+
+html:not(.dark) .admin-shell [data-badge-variant="warning"] {
+  background-color: #fef3c7 !important;
+  border-color: #fbbf24 !important;
+  color: #78350f !important;
+}
+
+html:not(.dark) .admin-shell [data-badge-variant="danger"] {
+  background-color: #fee2e2 !important;
+  border-color: #fca5a5 !important;
+  color: #991b1b !important;
+}
+
+html:not(.dark) .admin-shell [data-badge-variant="neutral"] {
+  background-color: #f4f4f5 !important;
+  border-color: #d4d4d8 !important;
+  color: #3f3f46 !important;
+}
+
+html:not(.dark) .admin-shell .admin-data-card,
+html:not(.dark) .admin-shell .admin-data-card-header {
+  background-color: #ffffff !important;
+  border-color: #e4e4e7 !important;
+}
+
+html:not(.dark) .admin-shell .admin-search-input {
+  background-color: #ffffff !important;
+  border-color: #e4e4e7 !important;
+  color: #18181b !important;
+}
+
+html:not(.dark) .admin-shell .admin-search-input::placeholder {
+  color: #a1a1aa !important;
+}
+
+html:not(.dark) .admin-shell .admin-stat-tile {
+  background-color: #f9fafb !important;
+  border-color: #e4e4e7 !important;
+}
+
+html:not(.dark) .admin-shell .admin-data-card .rounded-3xl.border {
+  background-color: #f9fafb !important;
+  border-color: #e4e4e7 !important;
+}
+
+html:not(.dark) .admin-shell .admin-editor-card,
+html:not(.dark) .admin-shell .admin-editor-section,
+html:not(.dark) .admin-shell .admin-editor-inner,
+html:not(.dark) .admin-shell .admin-editor-preview {
+  background-color: #ffffff !important;
+  border-color: #e4e4e7 !important;
+}
+
+html:not(.dark) .admin-shell .admin-editor-preview .admin-editor-chrome {
+  background-color: #f9fafb !important;
+  border-color: #e4e4e7 !important;
+}
+
+html:not(.dark) .admin-shell .admin-editor-preview .admin-editor-url-bar {
+  background-color: #ffffff !important;
+  color: #52525b !important;
+  border-color: #e4e4e7 !important;
+}
+
+html:not(.dark) .admin-shell .admin-editor-card input,
+html:not(.dark) .admin-shell .admin-editor-card textarea,
+html:not(.dark) .admin-shell .admin-editor-section input,
+html:not(.dark) .admin-shell .admin-editor-section textarea,
+html:not(.dark) .admin-shell .admin-editor-inner input,
+html:not(.dark) .admin-shell .admin-editor-inner textarea {
+  background-color: #ffffff !important;
+  border-color: #e4e4e7 !important;
+  color: #18181b !important;
+}
+
+html:not(.dark) .admin-shell .admin-editor-card input::placeholder,
+html:not(.dark) .admin-shell .admin-editor-card textarea::placeholder,
+html:not(.dark) .admin-shell .admin-editor-section textarea::placeholder {
+  color: #a1a1aa !important;
+}
+
+html:not(.dark) .admin-shell .admin-editor-card [role="tablist"] {
+  background-color: #f4f4f5 !important;
+  border-color: #e4e4e7 !important;
+}
+
+html:not(.dark) .admin-shell .admin-editor-card [role="tab"][aria-selected="true"] {
+  background-color: #ffffff !important;
+  color: #18181b !important;
+}
+
+html:not(.dark) .admin-shell .admin-editor-card [role="tab"]:not([aria-selected="true"]) {
+  color: #52525b !important;
+}
+
+html:not(.dark) .admin-shell .admin-editor-card button.border.border-zinc-200,
+html:not(.dark) .admin-shell .admin-editor-inner button.border.border-zinc-200 {
+  background-color: #ffffff !important;
+  color: #18181b !important;
+  border-color: #e4e4e7 !important;
+}
+
+html:not(.dark) .admin-shell .admin-editor-card .bg-zinc-50,
+html:not(.dark) .admin-shell .admin-editor-inner .bg-zinc-50 {
+  background-color: #f9fafb !important;
+}
+
+html:not(.dark) .admin-shell .admin-editor-card.rounded-2xl.border {
+  background-color: #ffffff !important;
+  border-color: #e4e4e7 !important;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05) !important;
+}
+
+/* Landing page light-mode polish */
+html:not(.dark) .landing-shell .landing-card {
+  background-color: #ffffff !important;
+  border-color: #e4e4e7 !important;
+}
+
+html:not(.dark) .landing-shell .landing-muted-surface {
+  background-color: #f9fafb !important;
+  border-color: #e4e4e7 !important;
+}
+
+html:not(.dark) .landing-shell .landing-nav-btn {
+  background-color: #ffffff !important;
+  border-color: #e4e4e7 !important;
+  color: #18181b !important;
+}
+
+html:not(.dark) .landing-shell .landing-nav-btn:hover {
+  background-color: #f4f4f5 !important;
+}
+
+html:not(.dark) .site-footer {
+  background-color: #ffffff !important;
+  border-color: #e4e4e7 !important;
+}
+
+html.dark .site-footer {
+  background-color: rgba(9, 9, 11, 0.55) !important;
+  border-color: #3f3f46 !important;
+}
+
+html:not(.dark) .admin-shell .auth-card {
+  background-color: #ffffff !important;
+  border-color: #e4e4e7 !important;
+}
+
+html:not(.dark) .admin-shell .auth-card .text-heading {
+  color: #000000 !important;
+}
+
+html:not(.dark) .admin-shell .auth-card .text-subheading {
+  color: #52525b !important;
+}
+
+html:not(.dark) .admin-shell .auth-card input {
+  background-color: #ffffff !important;
+  border-color: #e4e4e7 !important;
+  color: #18181b !important;
+}
+
+html:not(.dark) .admin-shell .auth-card input::placeholder {
+  color: #a1a1aa !important;
+}
+
+html.dark .admin-shell .auth-card {
+  background-color: rgba(9, 9, 11, 0.55) !important;
+  border-color: #3f3f46 !important;
+}
+
+html.dark .admin-shell .auth-card input,
+html.dark .admin-shell .auth-card textarea {
+  background-color: rgba(9, 9, 11, 0.5) !important;
+  border-color: #3f3f46 !important;
+  color: #f4f4f5 !important;
+}
+
+html.dark .admin-shell .auth-card input::placeholder,
+html.dark .admin-shell .auth-card textarea::placeholder {
+  color: #a1a1aa !important;
+}
+
+html:not(.dark) .admin-shell .auth-card .admin-auth-secondary-btn {
+  background-color: #ffffff !important;
+  border-color: #e4e4e7 !important;
+  color: #18181b !important;
+}
+
+html:not(.dark) .admin-shell .auth-card .admin-auth-secondary-btn:hover {
+  background-color: #f4f4f5 !important;
+  color: #09090b !important;
+}
+
+html:not(.dark) .admin-shell .admin-export-btn {
+  background-color: #ffffff !important;
+  border-color: #e4e4e7 !important;
+  color: #18181b !important;
+}
+
+html:not(.dark) .admin-shell .admin-export-btn:hover {
+  background-color: #f4f4f5 !important;
+}
+
+html:not(.dark) .admin-shell .admin-export-btn svg {
+  color: #3f3f46 !important;
+}
+
+html:not(.dark) .admin-shell .admin-all-orgs-toggle {
+  background-color: #ffffff !important;
+  border-color: #e4e4e7 !important;
+  color: #3f3f46 !important;
+}
+
+html.dark .admin-shell .admin-all-orgs-toggle {
+  background-color: rgba(9, 9, 11, 0.4) !important;
+  border-color: #3f3f46 !important;
+  color: #e4e4e7 !important;
+}
+
+html.dark .admin-shell .admin-all-orgs-toggle:hover {
+  background-color: rgba(24, 24, 27, 0.5) !important;
 }
 
 body {

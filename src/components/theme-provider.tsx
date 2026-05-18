@@ -31,7 +31,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [setting, setSetting] = React.useState<ThemeSetting>(() => {
     if (typeof window === "undefined") return "system";
     try {
-      return (window.localStorage.getItem(STORAGE_KEY) as ThemeSetting | null) ?? "system";
+      return (window.localStorage.getItem(STORAGE_KEY) as ThemeSetting | null) ?? "light";
     } catch {
       return "system";
     }
@@ -64,7 +64,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       theme,
       setting,
       setSetting,
-      toggle: () => setSetting((s) => (s === "dark" ? "light" : "dark")),
+      toggle: () =>
+        setSetting((s) => {
+          const resolved = s === "system" ? theme : s;
+          return resolved === "dark" ? "light" : "dark";
+        }),
     }),
     [setting, theme],
   );

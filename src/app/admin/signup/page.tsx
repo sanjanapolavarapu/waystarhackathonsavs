@@ -66,23 +66,21 @@ export default function AdminSignupPage() {
 
   return (
     <div className="min-h-[calc(100vh-96px)] flex items-center justify-center">
-      <Card className="w-full max-w-md bg-white/80 backdrop-blur">
+      <Card className="auth-card admin-data-card w-full max-w-md border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950/40">
         <CardHeader>
-          <div className="text-lg font-semibold text-zinc-900 tracking-tight">Create account</div>
-          <div className="mt-1 text-sm text-zinc-500">
-            Sign up to access the admin portal.
-          </div>
+          <div className="text-lg font-semibold tracking-tight text-heading">Create account</div>
+          <div className="mt-1 text-sm text-subheading">Sign up to access the admin portal.</div>
         </CardHeader>
         <CardContent>
           <form className="space-y-4" onSubmit={onSubmit}>
             <div className="space-y-2">
-              <label className="text-xs font-medium text-zinc-600" htmlFor="name">
+              <label className="text-xs font-medium text-subheading" htmlFor="name">
                 Name
               </label>
               <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-medium text-zinc-600" htmlFor="email">
+              <label className="text-xs font-medium text-subheading" htmlFor="email">
                 Email
               </label>
               <Input
@@ -94,7 +92,7 @@ export default function AdminSignupPage() {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-medium text-zinc-600" htmlFor="password">
+              <label className="text-xs font-medium text-subheading" htmlFor="password">
                 Password
               </label>
               <Input
@@ -122,9 +120,9 @@ export default function AdminSignupPage() {
             </Button>
           </form>
 
-          <div className="mt-5 text-sm text-zinc-600">
+          <div className="mt-5 text-sm text-subheading">
             Already have an account?{" "}
-            <Link className="font-medium text-zinc-900 hover:underline underline-offset-4" href="/admin/login">
+            <Link className="font-medium text-heading hover:underline underline-offset-4" href="/admin/login">
               Sign in
             </Link>
           </div>
