@@ -28,6 +28,7 @@ export function OrgSwitcher({ className }: { className?: string }) {
   const [hydrated, setHydrated] = React.useState(false);
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
   const [open, setOpen] = React.useState(false);
+  const containerRef = React.useRef<HTMLDivElement>(null);
 
   const loadOrgs = React.useCallback(async () => {
     const supabase = getSupabaseClient();
@@ -106,6 +107,32 @@ export function OrgSwitcher({ className }: { className?: string }) {
     };
   }, [loadOrgs]);
 
+  React.useEffect(() => {
+    if (!open) return;
+
+    const close = () => setOpen(false);
+
+    const onPointerDown = (event: MouseEvent | TouchEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (containerRef.current?.contains(target)) return;
+      close();
+    };
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") close();
+    };
+
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("touchstart", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("touchstart", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
+
   const selected = orgs.find((o) => o.id === selectedId) ?? null;
   const storedName = hydrated ? getSelectedOrgDisplayName() : null;
   const resolvedName =
@@ -117,22 +144,24 @@ export function OrgSwitcher({ className }: { className?: string }) {
     resolvedName ?? (hydrated ? (orgs.length > 0 ? "Select organization" : "No organizations") : "Select organization");
 
   return (
-    <div className={cn("relative", className)}>
+    <div ref={containerRef} className={cn("relative", className)}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex h-10 items-center gap-2 rounded-2xl border border-zinc-200 bg-white/80 px-3 text-sm font-medium text-zinc-800 shadow-sm hover:bg-white dark:border-zinc-800 dark:bg-zinc-950/40 dark:text-zinc-100 dark:hover:bg-zinc-950/60"
+        aria-controls="org-switcher-menu"
+        className="admin-org-switcher inline-flex h-10 items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-3 text-sm font-medium text-zinc-800 shadow-sm hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950/40 dark:text-zinc-100 dark:hover:bg-zinc-900/60"
         aria-haspopup="menu"
         aria-expanded={open}
       >
         <span className="max-w-[180px] truncate">{buttonLabel}</span>
-        <ChevronDown className="h-4 w-4 text-zinc-500 dark:text-zinc-400" />
+        <ChevronDown className="h-4 w-4 shrink-0 text-zinc-500" />
       </button>
 
       {open ? (
         <div
+          id="org-switcher-menu"
           role="menu"
-          className="absolute right-0 z-20 mt-2 w-64 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-lg dark:border-zinc-800 dark:bg-zinc-950"
+          className="admin-org-menu absolute right-0 z-20 mt-2 w-64 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-lg dark:border-zinc-800 dark:bg-zinc-950"
         >
           {orgs.length ? (
             <div className="py-1">
@@ -150,37 +179,41 @@ export function OrgSwitcher({ className }: { className?: string }) {
                       router.refresh();
                     }}
                     className={cn(
-                      "flex w-full items-center justify-between px-3 py-2 text-left text-sm",
+                      "admin-org-menu-item flex w-full items-center justify-between px-3 py-2.5 text-left text-sm transition",
                       active
-                        ? "bg-indigo-50 text-indigo-900 dark:bg-indigo-500/15 dark:text-indigo-100"
+                        ? "bg-violet-50 text-violet-900 dark:bg-violet-500/15 dark:text-violet-100"
                         : "text-zinc-800 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-zinc-900/50",
                     )}
                   >
-                    <span className="truncate">{o.name}</span>
-                    {active ? <span className="text-xs font-semibold">Active</span> : null}
+                    <span className="truncate font-medium">{o.name}</span>
+                    {active ? (
+                      <span className="shrink-0 rounded-full border border-violet-300 bg-violet-100 px-2 py-0.5 text-xs font-semibold text-violet-900 dark:border-violet-500/40 dark:bg-violet-500/20 dark:text-violet-100">
+                        Active
+                      </span>
+                    ) : null}
                   </button>
                 );
               })}
             </div>
           ) : (
-            <div className="px-3 py-2 text-sm text-zinc-600 dark:text-zinc-300">
+            <div className="px-3 py-2 text-sm text-subheading">
               You’re not in any organizations yet. Create one or join with a code below.
             </div>
           )}
 
-          <div className="border-t border-zinc-200 bg-zinc-50/60 p-2 dark:border-zinc-800 dark:bg-zinc-900/40">
+          <div className="admin-org-menu-footer border-t border-zinc-200 bg-zinc-50 p-2 dark:border-zinc-800 dark:bg-zinc-900/40">
             <div className="grid grid-cols-2 gap-2">
               <Link
                 href="/admin/orgs/new"
                 onClick={() => setOpen(false)}
-                className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-center text-sm font-medium text-zinc-800 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950/40 dark:text-zinc-100 dark:hover:bg-zinc-900/60"
+                className="admin-org-menu-action rounded-xl border border-zinc-200 bg-white px-3 py-2 text-center text-sm font-medium text-zinc-800 shadow-sm hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950/40 dark:text-zinc-100 dark:hover:bg-zinc-900/60"
               >
                 Create org
               </Link>
               <Link
                 href="/admin/orgs/join"
                 onClick={() => setOpen(false)}
-                className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-center text-sm font-medium text-zinc-800 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950/40 dark:text-zinc-100 dark:hover:bg-zinc-900/60"
+                className="admin-org-menu-action rounded-xl border border-zinc-200 bg-white px-3 py-2 text-center text-sm font-medium text-zinc-800 shadow-sm hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950/40 dark:text-zinc-100 dark:hover:bg-zinc-900/60"
               >
                 Join w/ code
               </Link>
@@ -188,7 +221,7 @@ export function OrgSwitcher({ className }: { className?: string }) {
             <Link
               href="/admin/orgs/invites"
               onClick={() => setOpen(false)}
-              className="mt-2 block rounded-xl border border-zinc-200 bg-white px-3 py-2 text-center text-sm font-medium text-zinc-800 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950/40 dark:text-zinc-100 dark:hover:bg-zinc-900/60"
+              className="admin-org-menu-action mt-2 block rounded-xl border border-zinc-200 bg-white px-3 py-2 text-center text-sm font-medium text-zinc-800 shadow-sm hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950/40 dark:text-zinc-100 dark:hover:bg-zinc-900/60"
             >
               Invite codes
             </Link>
@@ -196,7 +229,7 @@ export function OrgSwitcher({ className }: { className?: string }) {
               <Link
                 href="/admin/orgs/delete"
                 onClick={() => setOpen(false)}
-                className="mt-2 block rounded-xl border border-red-200 bg-white px-3 py-2 text-center text-sm font-medium text-red-700 hover:bg-red-50 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200 dark:hover:bg-red-500/15"
+                className="admin-org-menu-danger mt-2 block rounded-xl border border-red-200 bg-white px-3 py-2 text-center text-sm font-medium text-red-700 shadow-sm hover:bg-red-50 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200 dark:hover:bg-red-500/15"
               >
                 Delete organization…
               </Link>

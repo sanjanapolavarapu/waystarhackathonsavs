@@ -11,7 +11,7 @@ export function ThemeToggle({ className }: { className?: string }) {
   // Avoid hydration mismatch: theme comes from client-side storage/media query.
   const [hydrated, setHydrated] = React.useState(false);
   React.useEffect(() => setHydrated(true), []);
-  const stableTheme = hydrated ? theme : "dark";
+  const stableTheme = hydrated ? theme : "light";
   const label = stableTheme === "dark" ? "Switch to light mode" : "Switch to dark mode";
 
   return (

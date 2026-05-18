@@ -16,7 +16,7 @@ export default function PayTestPage() {
           </div>
         </div>
 
-        <Card className="bg-white/80 backdrop-blur">
+        <Card>
           <CardHeader>
             <div className="text-sm font-semibold text-zinc-900">Choose a test checkout</div>
             <div className="mt-1 text-sm text-zinc-500">

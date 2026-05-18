@@ -1,5 +1,6 @@
 import * as React from "react";
 
+import { primaryButtonClassName } from "@/lib/primary-button-styles";
 import { cn } from "@/lib/utils";
 
 type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -18,8 +19,7 @@ export function Button({
       className={cn(
         "inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors disabled:pointer-events-none disabled:opacity-50",
         size === "sm" ? "h-9 px-3 text-sm" : "h-10 px-4 text-sm",
-        variant === "primary" &&
-          "text-white shadow-sm bg-gradient-to-r from-indigo-600 to-fuchsia-600 hover:from-indigo-700 hover:to-fuchsia-700",
+        variant === "primary" && primaryButtonClassName,
         variant === "secondary" &&
           "bg-white text-zinc-900 border border-zinc-200 hover:bg-zinc-50 shadow-sm",
         variant === "secondary" &&

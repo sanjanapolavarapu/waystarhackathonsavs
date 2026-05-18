@@ -7,7 +7,7 @@ export default function PaySuccessPage() {
   return (
     <div className="min-h-screen bg-background text-foreground px-6 py-16">
       <div className="mx-auto w-full max-w-md">
-        <Card className="bg-white/80 backdrop-blur dark:bg-zinc-950/30">
+        <Card className=" dark:bg-zinc-950/30">
           <CardHeader>
             <div className="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
               Payment successful

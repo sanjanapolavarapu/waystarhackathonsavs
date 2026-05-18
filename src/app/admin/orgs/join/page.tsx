@@ -22,18 +22,14 @@ export default function JoinOrganizationPage() {
       <div className="mb-4 flex justify-end">
         <OrgSwitcher />
       </div>
-      <Card className="bg-white/80 backdrop-blur">
+      <Card className="auth-card admin-data-card border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950/40">
         <CardHeader>
-          <div className="text-xl font-semibold tracking-tight text-zinc-900">
-            Join an organization
-          </div>
-          <div className="mt-1 text-sm text-zinc-500">
-            Paste the invite code from your organization admin.
-          </div>
+          <div className="text-xl font-semibold tracking-tight text-heading">Join an organization</div>
+          <div className="mt-1 text-sm text-subheading">Paste the invite code from your organization admin.</div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <label className="text-xs font-medium text-zinc-600" htmlFor="invite_code">
+            <label className="text-xs font-medium text-subheading" htmlFor="invite_code">
               Invite code
             </label>
             <Input
@@ -45,13 +41,13 @@ export default function JoinOrganizationPage() {
           </div>
 
           {error ? (
-            <div className="rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            <div className="rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200">
               {error}
             </div>
           ) : null}
 
           <div className="flex items-center justify-between pt-2">
-            <Link href="/admin/pages" className="text-sm text-zinc-600 hover:text-zinc-900">
+            <Link href="/admin/pages" className="text-sm font-medium text-subheading hover:text-heading dark:hover:text-zinc-100">
               Cancel
             </Link>
             <Button

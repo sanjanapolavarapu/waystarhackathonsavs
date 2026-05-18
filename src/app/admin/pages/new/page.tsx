@@ -56,46 +56,54 @@ export default function NewPageUi() {
       setSaving(false);
     }
   }
+
   return (
     <div className="mx-auto w-full max-w-2xl">
-      <Card className="bg-white/80 backdrop-blur">
+      <Card className="auth-card admin-data-card border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950/40">
         <CardHeader>
-          <div className="text-xl font-semibold tracking-tight text-zinc-900">
-            Create a new payment page
-          </div>
-          <div className="mt-1 text-sm text-zinc-500">
+          <div className="text-xl font-semibold tracking-tight text-heading">Create a new payment page</div>
+          <div className="mt-1 text-sm text-subheading">
             Create a new payment page and start editing immediately.
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <label className="text-xs font-medium text-zinc-600" htmlFor="title">
+            <label className="text-xs font-medium text-subheading" htmlFor="title">
               Page title
             </label>
             <Input
               id="title"
+              className="admin-search-input"
               placeholder="e.g., Consulting Session"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
             />
           </div>
           <div className="space-y-2">
-            <label className="text-xs font-medium text-zinc-600" htmlFor="slug">
+            <label className="text-xs font-medium text-subheading" htmlFor="slug">
               URL slug
             </label>
             <Input
               id="slug"
+              className="admin-search-input"
               placeholder="e.g., consulting-session"
               value={slug}
               onChange={(e) => setSlug(e.target.value)}
             />
-            <div className="text-xs text-zinc-500">
-              Becomes <span className="font-mono">/pay/&lt;slug&gt;</span>
+            <div className="text-xs text-subheading">
+              Becomes <span className="font-mono text-heading">/pay/&lt;slug&gt;</span>
             </div>
           </div>
-          {error ? <div className="text-sm text-red-600">{error}</div> : null}
+          {error ? (
+            <div className="text-sm text-red-600 dark:text-red-300" role="alert">
+              {error}
+            </div>
+          ) : null}
           <div className="flex items-center justify-between pt-2">
-            <Link href="/admin/pages" className="text-sm text-zinc-600 hover:text-zinc-900">
+            <Link
+              href="/admin/pages"
+              className="text-sm font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"
+            >
               Cancel
             </Link>
             <Button variant="primary" type="button" onClick={handleCreatePage} disabled={saving}>
@@ -107,4 +115,3 @@ export default function NewPageUi() {
     </div>
   );
 }
-

@@ -72,12 +72,8 @@ export default function AdminPagesClient() {
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <div className="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
-            Payment Pages
-          </div>
-          <div className="mt-1 text-sm text-zinc-500 dark:text-zinc-300">
-            Create, configure, and share Quick Payment Pages.
-          </div>
+          <h1 className="text-xl font-semibold tracking-tight text-heading">Payment Pages</h1>
+          <p className="mt-1 text-sm text-subheading">Create, configure, and share Quick Payment Pages.</p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -96,14 +92,14 @@ export default function AdminPagesClient() {
         </div>
       ) : null}
 
-      <Card className="bg-white/80 backdrop-blur dark:bg-zinc-950/30">
-        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">All pages</div>
+      <Card className="admin-data-card overflow-hidden border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950/40">
+        <CardHeader className="admin-data-card-header flex flex-col gap-3 bg-white px-5 pb-4 pt-5 dark:bg-zinc-950/40 sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-sm font-semibold tracking-tight text-heading">All pages</div>
           <div className="relative w-full sm:w-[340px]">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400 dark:text-zinc-500" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
             <Input
               placeholder="Search pages…"
-              className="pl-10"
+              className="admin-search-input pl-10"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
@@ -112,8 +108,8 @@ export default function AdminPagesClient() {
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-sm">
-              <thead className="border-t border-zinc-200 bg-zinc-50/70 dark:border-zinc-800 dark:bg-zinc-900/30">
-                <tr className="text-xs font-medium text-zinc-600 dark:text-zinc-300">
+              <thead className="border-t border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/30">
+                <tr className="text-xs font-medium text-subheading">
                   <th className="px-5 py-3">Page</th>
                   <th className="px-5 py-3">Slug</th>
                   <th className="px-5 py-3">Status</th>
@@ -123,20 +119,20 @@ export default function AdminPagesClient() {
               </thead>
               <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
                 {loading ? (
-                  <tr className="bg-white/60 dark:bg-zinc-950/20">
+                  <tr className="bg-white hover:bg-zinc-50/80 dark:bg-zinc-950/20">
                     <td className="px-5 py-6 text-zinc-600 dark:text-zinc-300" colSpan={5}>
                       Loading…
                     </td>
                   </tr>
                 ) : filteredPages.length === 0 ? (
-                  <tr className="bg-white/60 dark:bg-zinc-950/20">
+                  <tr className="bg-white hover:bg-zinc-50/80 dark:bg-zinc-950/20">
                     <td className="px-5 py-6 text-zinc-600 dark:text-zinc-300" colSpan={5}>
                       {pages.length === 0 ? "No pages yet." : "No matching pages."}
                     </td>
                   </tr>
                 ) : (
                   filteredPages.map((p) => (
-                    <tr key={p.id} className="bg-white/60 dark:bg-zinc-950/20">
+                    <tr key={p.id} className="bg-white hover:bg-zinc-50/80 dark:bg-zinc-950/20">
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
                           <div
@@ -145,13 +141,13 @@ export default function AdminPagesClient() {
                             aria-hidden="true"
                           />
                           <div>
-                            <div className="font-semibold text-zinc-900 dark:text-zinc-100">{p.title}</div>
-                            <div className="text-xs text-zinc-500 dark:text-zinc-400">{p.subtitle}</div>
+                            <div className="font-semibold text-heading">{p.title}</div>
+                            <div className="text-xs text-subheading">{p.subtitle}</div>
                           </div>
                         </div>
                       </td>
                       <td className="px-5 py-4">
-                        <span className="font-mono text-xs text-zinc-700 dark:text-zinc-300">
+                        <span className="font-mono text-xs text-subheading">
                           /pay/{p.slug}
                         </span>
                       </td>
@@ -162,7 +158,7 @@ export default function AdminPagesClient() {
                           <Badge variant="warning">Disabled</Badge>
                         )}
                       </td>
-                      <td className="px-5 py-4 text-zinc-600 dark:text-zinc-300">
+                      <td className="px-5 py-4 text-subheading">
                         {new Date(p.updatedAt).toLocaleDateString()}
                       </td>
                       <td className="px-5 py-4">

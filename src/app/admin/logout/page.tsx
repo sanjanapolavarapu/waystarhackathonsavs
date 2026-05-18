@@ -3,38 +3,46 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { getSupabaseClient } from "@/lib/supabase";
 
 export default function AdminLogoutPage() {
   const router = useRouter();
-  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
 
-  async function logout() {
-    setLoading(true);
-    try {
-      await fetch("/api/auth/logout", { method: "POST" });
-      router.replace("/admin/login");
-      router.refresh();
-    } finally {
-      setLoading(false);
+  React.useEffect(() => {
+    let cancelled = false;
+
+    async function logout() {
+      try {
+        await fetch("/api/auth/logout", { method: "POST" });
+        const supabase = getSupabaseClient();
+        if (supabase) await supabase.auth.signOut();
+        if (!cancelled) {
+          router.replace("/");
+          router.refresh();
+        }
+      } catch {
+        if (!cancelled) setError("Could not sign out. Please try again.");
+      }
     }
+
+    void logout();
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
+
+  if (error) {
+    return (
+      <div className="flex min-h-[calc(100vh-96px)] items-center justify-center px-4 text-center text-sm text-red-600 dark:text-red-300">
+        {error}
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-[calc(100vh-96px)] flex items-center justify-center">
-      <Card className="w-full max-w-md bg-white/80 backdrop-blur">
-        <CardHeader>
-          <div className="text-lg font-semibold tracking-tight text-zinc-900">Sign out</div>
-          <div className="mt-1 text-sm text-zinc-500">End your admin session.</div>
-        </CardHeader>
-        <CardContent>
-          <Button variant="secondary" className="w-full" onClick={logout} disabled={loading}>
-            {loading ? "Signing out…" : "Sign out"}
-          </Button>
-        </CardContent>
-      </Card>
+    <div className="flex min-h-[calc(100vh-96px)] items-center justify-center text-sm text-subheading">
+      Signing out…
     </div>
   );
 }
-

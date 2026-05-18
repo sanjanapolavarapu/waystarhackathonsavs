@@ -50,7 +50,7 @@ export function PaySuccessClient() {
   return (
     <div className="min-h-screen bg-[#fbfbff] px-6 py-16">
       <div className="mx-auto w-full max-w-md">
-        <Card className="bg-white/80 backdrop-blur">
+        <Card>
           <CardHeader>
             <div className="text-xl font-semibold tracking-tight text-zinc-900">Payment successful</div>
             <div className="mt-1 text-sm text-zinc-500">

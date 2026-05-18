@@ -24,7 +24,7 @@ export default function InviteCodesPage() {
       <div className="mb-4 flex justify-end">
         <OrgSwitcher />
       </div>
-      <Card className="bg-white/80 backdrop-blur">
+      <Card>
         <CardHeader>
           <div className="text-xl font-semibold tracking-tight text-zinc-900">Invite codes</div>
           <div className="mt-1 text-sm text-zinc-500">

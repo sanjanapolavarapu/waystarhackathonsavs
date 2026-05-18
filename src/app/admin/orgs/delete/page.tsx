@@ -92,7 +92,7 @@ export default function DeleteOrganizationPage() {
         <OrgSwitcher />
       </div>
 
-      <Card className="bg-white/80 backdrop-blur border-red-200">
+      <Card className="border-red-200">
         <CardHeader>
           <div className="text-xl font-semibold tracking-tight text-zinc-900">
             Delete organization
