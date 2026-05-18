@@ -112,6 +112,20 @@ export async function savePage(page: PaymentPage): Promise<PaymentPage> {
   throw new Error(errBody.error || `Failed to save page (${putRes.status})`);
 }
 
+/** Permanently delete a payment page and its related records (org-scoped). */
+export async function deletePage(slug: string): Promise<void> {
+  const orgId = getSelectedOrgId();
+  if (!orgId) throw new Error("Select or join an organization to continue.");
+
+  const res = await fetch(`/api/admin/payment-pages/${encodeURIComponent(slug)}`, {
+    method: "DELETE",
+    headers: { "x-org-id": orgId },
+    credentials: "same-origin",
+  });
+
+  await jsonOrThrow<{ ok?: boolean }>(res);
+}
+
 // Fetch all transactions, join payment_pages to get slug
 export async function listTransactions(): Promise<Transaction[]> {
   const client = requireSupabase();

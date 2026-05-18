@@ -2,6 +2,7 @@ import Link from "next/link";
 import { BrandLogoLink } from "@/components/brand-logo-link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { primaryButtonClassName } from "@/lib/primary-button-styles";
+import { TypewriterHeroHeadline } from "@/components/typewriter-hero-headline";
 
 const BRAND = "#0EA5E9";
 
@@ -51,9 +52,7 @@ export default function Home() {
                 <span className="h-1 w-1 rounded-full bg-zinc-300 dark:bg-zinc-600" />
                 Shareable link
               </div>
-              <h1 className="mt-6 text-4xl font-semibold tracking-tight text-heading sm:text-6xl">
-                Get paid fast with a link.
-              </h1>
+              <TypewriterHeroHeadline className="mt-6 text-4xl font-semibold tracking-tight text-heading sm:text-6xl" />
               <p className="mt-4 text-base text-subheading sm:text-lg dark:text-zinc-300">
                 Create a branded payment experience for services, invoices, donations, or fees.
                 Share a URL, embed it on your site, or print a QR.

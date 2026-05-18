@@ -5,7 +5,6 @@ import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
 
 import type { PaymentPage } from "@/lib/qpp-types";
-import { getPageBySlug } from "@/lib/mock-qpp";
 import { getSupabaseClient } from "@/lib/supabase";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,9 +22,13 @@ function fmtMoney(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
-export function PublicPayClient({ slug }: { slug: string }) {
-  const [page, setPage] = React.useState<PaymentPage | null>(() => getPageBySlug(slug));
-  const [loadError, setLoadError] = React.useState<string | null>(null);
+export function PublicPayClient({
+  initialPage = null,
+}: {
+  slug: string;
+  initialPage?: PaymentPage | null;
+}) {
+  const page = initialPage;
   const [logoBroken, setLogoBroken] = React.useState(false);
   const visitRowIdRef = React.useRef<string | null>(null);
   const formStartedSentRef = React.useRef(false);
@@ -42,34 +45,6 @@ export function PublicPayClient({ slug }: { slug: string }) {
     formStartedSentRef.current = true;
     void supabase.from("page_visits").update({ form_started: true }).eq("id", visitId);
   }, []);
-
-  React.useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      try {
-        const res = await fetch(`/api/payment-pages/${encodeURIComponent(slug)}`);
-        const json = (await res.json()) as { page?: PaymentPage | null; error?: string };
-        if (!res.ok) throw new Error(json.error || "Failed to load page");
-        if (cancelled) return;
-        const next = json.page ?? getPageBySlug(slug);
-        queueMicrotask(() => {
-          if (cancelled) return;
-          setLoadError(null);
-          setPage(next);
-        });
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : "Failed to load page";
-        queueMicrotask(() => {
-          if (cancelled) return;
-          setLoadError(msg);
-          setPage(getPageBySlug(slug));
-        });
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [slug]);
 
   React.useEffect(() => {
     if (!page?.id) return;
@@ -144,11 +119,6 @@ export function PublicPayClient({ slug }: { slug: string }) {
   return (
     <div className="min-h-screen bg-[#fbfbff] dark:bg-zinc-950 bg-[radial-gradient(1200px_600px_at_15%_20%,rgba(99,102,241,0.12),transparent_60%),radial-gradient(900px_500px_at_90%_10%,rgba(217,70,239,0.10),transparent_55%)] dark:bg-[radial-gradient(1200px_600px_at_15%_20%,rgba(99,102,241,0.18),transparent_60%),radial-gradient(900px_500px_at_90%_10%,rgba(217,70,239,0.16),transparent_55%)] px-6 py-12">
       <div className="mx-auto w-full max-w-md">
-        {loadError ? (
-          <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            {loadError}
-          </div>
-        ) : null}
         <div className="flex flex-col items-center">
           <div className="h-14 w-14 shrink-0 rounded-full border border-zinc-200 bg-white shadow-sm grid place-items-center overflow-hidden p-1.5">
             {page.logoUrl && !logoBroken ? (
@@ -221,4 +191,3 @@ export function PublicPayClient({ slug }: { slug: string }) {
     </div>
   );
 }
-

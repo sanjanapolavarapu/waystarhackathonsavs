@@ -4,19 +4,23 @@ import Link from "next/link";
 import { Plus, Search } from "lucide-react";
 import * as React from "react";
 
-import { listPages } from "@/lib/db";
+import { deletePage, listPages } from "@/lib/db";
 import type { PaymentPage } from "@/lib/qpp-types";
 import { SELECTED_ORG_CHANGED_EVENT } from "@/lib/org";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { DeletePaymentPageDialog } from "@/components/delete-payment-page-dialog";
 
 export default function AdminPagesList() {
   const [pages, setPages] = React.useState<PaymentPage[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [query, setQuery] = React.useState("");
+  const [deleteTarget, setDeleteTarget] = React.useState<PaymentPage | null>(null);
+  const [deleteError, setDeleteError] = React.useState<string | null>(null);
+  const [deleting, setDeleting] = React.useState(false);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -57,8 +61,37 @@ export default function AdminPagesList() {
     });
   }, [pages, query]);
 
+  async function confirmDeletePage() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await deletePage(deleteTarget.slug);
+      setPages((prev) => prev.filter((row) => row.slug !== deleteTarget.slug));
+      setDeleteTarget(null);
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : "Failed to delete page.");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   return (
     <div className="space-y-4">
+      <DeletePaymentPageDialog
+        open={Boolean(deleteTarget)}
+        pageTitle={deleteTarget?.title ?? ""}
+        pageSlug={deleteTarget?.slug ?? ""}
+        deleting={deleting}
+        error={deleteError}
+        onClose={() => {
+          if (!deleting) {
+            setDeleteTarget(null);
+            setDeleteError(null);
+          }
+        }}
+        onConfirm={confirmDeletePage}
+      />
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-xl font-semibold tracking-tight text-heading">Payment Pages</h1>
@@ -107,21 +140,21 @@ export default function AdminPagesList() {
               </thead>
               <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
                 {loading ? (
-                  <tr className="bg-white hover:bg-zinc-50/80 dark:bg-zinc-950/20">
+                  <tr className="bg-white hover:bg-zinc-50/80 dark:bg-zinc-950/20 dark:hover:bg-zinc-900/55">
                     <td className="px-5 py-6 text-zinc-600 dark:text-zinc-300" colSpan={5}>
                       Loading...
                     </td>
                   </tr>
                 ) : null}
                 {!loading && filteredPages.length === 0 ? (
-                  <tr className="bg-white hover:bg-zinc-50/80 dark:bg-zinc-950/20">
+                  <tr className="bg-white hover:bg-zinc-50/80 dark:bg-zinc-950/20 dark:hover:bg-zinc-900/55">
                     <td className="px-5 py-6 text-zinc-600 dark:text-zinc-300" colSpan={5}>
                       {pages.length === 0 ? "No pages yet." : "No matching pages."}
                     </td>
                   </tr>
                 ) : null}
                 {filteredPages.map((p) => (
-                  <tr key={p.id} className="bg-white hover:bg-zinc-50/80 dark:bg-zinc-950/20">
+                  <tr key={p.id} className="bg-white hover:bg-zinc-50/80 dark:bg-zinc-950/20 dark:hover:bg-zinc-900/55">
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
                         <div
@@ -164,6 +197,19 @@ export default function AdminPagesList() {
                             Edit
                           </Button>
                         </Link>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40"
+                          disabled={deleting && deleteTarget?.slug === p.slug}
+                          onClick={() => {
+                            setDeleteError(null);
+                            setDeleteTarget(p);
+                          }}
+                        >
+                          Delete
+                        </Button>
                       </div>
                     </td>
                   </tr>

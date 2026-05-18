@@ -69,13 +69,20 @@ html.dark .text-subheading {
 }
 
 /* Admin light-mode polish only (html:not(.dark)) */
-html:not(.dark) .admin-shell table tbody tr,
-html:not(.dark) .admin-shell table thead {
+html:not(.dark) .admin-shell table tbody tr {
   background-color: #ffffff !important;
+}
+
+html:not(.dark) .admin-shell table tbody tr:hover {
+  background-color: #f4f4f5 !important;
 }
 
 html:not(.dark) .admin-shell table thead {
   background-color: #f9fafb !important;
+}
+
+html.dark .admin-shell table tbody tr:hover {
+  background-color: rgba(39, 39, 42, 0.55) !important;
 }
 
 html:not(.dark) .admin-shell .admin-tab-nav {
