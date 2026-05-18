@@ -1,3 +1,6 @@
+-- Run once in Supabase SQL Editor (safe to re-run).
+-- Creates page_visits if missing and adds columns on older tables.
+
 create table if not exists public.page_visits (
   id uuid primary key default gen_random_uuid(),
   organization_id uuid null,
@@ -8,10 +11,26 @@ create table if not exists public.page_visits (
   form_started boolean not null default false
 );
 
--- If the table already existed without these columns, add them (run once if needed):
+-- Older deployments: table existed without these columns.
 alter table public.page_visits add column if not exists device text not null default 'desktop';
 alter table public.page_visits add column if not exists form_started boolean not null default false;
 
 create index if not exists page_visits_org_idx on public.page_visits (organization_id);
 create index if not exists page_visits_slug_idx on public.page_visits (page_slug);
 create index if not exists page_visits_visited_at_idx on public.page_visits (visited_at desc);
+
+-- Allow public pay pages to record visits (anon + signed-in).
+alter table public.page_visits enable row level security;
+
+drop policy if exists "Anyone can insert page visits" on public.page_visits;
+create policy "Anyone can insert page visits"
+  on public.page_visits for insert
+  to anon, authenticated
+  with check (true);
+
+drop policy if exists "Anyone can update page visits form_started" on public.page_visits;
+create policy "Anyone can update page visits form_started"
+  on public.page_visits for update
+  to anon, authenticated
+  using (true)
+  with check (true);

@@ -121,9 +121,12 @@ export async function GET(req: Request) {
     .order("visited_at", { ascending: false });
 
   if (visitsRes.error) {
-    const msg = String(visitsRes.error.message ?? "");
+    const msg = String(visitsRes.error.message ?? "").toLowerCase();
+    const missingFormStarted =
+      msg.includes("form_started") && (msg.includes("does not exist") || msg.includes("could not find"));
+
     // Older `page_visits` tables may not have `form_started` yet.
-    if (msg.includes("page_visits.form_started") && msg.includes("does not exist")) {
+    if (missingFormStarted) {
       const fallback = await auth.admin
         .from("page_visits")
         .select("id, page_slug, visited_at")
@@ -131,15 +134,14 @@ export async function GET(req: Request) {
         .order("visited_at", { ascending: false });
 
       if (fallback.error) {
-        visitsWarning = `Page visit tracking query failed: ${fallback.error.message}. Ensure page_visits exists (scripts/create-page-visits-table.sql).`;
+        visitsWarning = `Page visit tracking query failed: ${fallback.error.message}. Run scripts/migrate-page-visits.sql in Supabase.`;
         page_visits = [];
       } else {
-        visitsWarning =
-          "Page visit tracking is partially enabled (missing page_visits.form_started). Run the ALTER TABLE lines in scripts/create-page-visits-table.sql to add it.";
-        page_visits = (fallback.data ?? []).map((r) => ({ ...r, form_started: null }));
+        // Visits load; "Started form" stays 0 until form_started column exists.
+        page_visits = (fallback.data ?? []).map((r) => ({ ...r, form_started: false }));
       }
     } else {
-      visitsWarning = `Page visit tracking query failed: ${visitsRes.error.message}. Ensure page_visits exists (scripts/create-page-visits-table.sql).`;
+      visitsWarning = `Page visit tracking query failed: ${visitsRes.error.message}. Run scripts/migrate-page-visits.sql in Supabase.`;
       page_visits = [];
     }
   } else {
