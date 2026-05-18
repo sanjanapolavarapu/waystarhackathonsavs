@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import * as QRCode from "qrcode";
 import {
   ChevronUp,
@@ -14,7 +15,7 @@ import {
 } from "lucide-react";
 
 import { getPageInsights, type PageInsightsMetrics } from "@/lib/analytics";
-import { getPageBySlug, savePage } from "@/lib/db";
+import { deletePage, getPageBySlug, savePage } from "@/lib/db";
 import { validateGlCodes } from "@/lib/gl-code";
 import { SELECTED_ORG_CHANGED_EVENT } from "@/lib/org";
 import type { CustomField, CustomFieldType, PaymentPage } from "@/lib/qpp-types";
@@ -23,6 +24,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Segmented } from "@/components/ui/segmented";
 import { Badge } from "@/components/ui/badge";
+import { DeletePaymentPageDialog } from "@/components/delete-payment-page-dialog";
 import { buildPublicPayUrl, getPublicBaseUrl } from "@/lib/public-url";
 import { cn } from "@/lib/utils";
 
@@ -58,6 +60,7 @@ function normalizeFieldOrder(fields: CustomField[]) {
 }
 
 export default function AdminPageEditor({ params }: { params: Promise<{ slug: string }> }) {
+  const router = useRouter();
   const { slug } = React.use(params);
   const [page, setPage] = React.useState<PaymentPage>(EMPTY_PAGE);
   const [newFieldId, setNewFieldId] = React.useState<string | null>(null);
@@ -70,6 +73,9 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
   const [pageInsights, setPageInsights] = React.useState<PageInsightsMetrics | null>(null);
   const [insightsLoading, setInsightsLoading] = React.useState(false);
   const [insightsReload, setInsightsReload] = React.useState(0);
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+  const [deleteError, setDeleteError] = React.useState<string | null>(null);
+  const [deleting, setDeleting] = React.useState(false);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -229,6 +235,23 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
     }
   }
 
+  async function confirmDeletePage() {
+    setDeleting(true);
+    setDeleteError(null);
+    setSaveSuccess(null);
+    setSaveError(null);
+    try {
+      await deletePage(page.slug);
+      setDeleteDialogOpen(false);
+      router.push("/admin/pages");
+      router.refresh();
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : "Failed to delete page.");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   if (loading) {
     return <div className="py-10 text-sm text-zinc-600">Loading...</div>;
   }
@@ -239,6 +262,20 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
 
   return (
     <div className="space-y-5">
+      <DeletePaymentPageDialog
+        open={deleteDialogOpen}
+        pageTitle={page.title}
+        pageSlug={page.slug}
+        deleting={deleting}
+        error={deleteError}
+        onClose={() => {
+          if (!deleting) {
+            setDeleteDialogOpen(false);
+            setDeleteError(null);
+          }
+        }}
+        onConfirm={confirmDeletePage}
+      />
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
@@ -263,6 +300,18 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
           <Button variant="primary" onClick={handlePublish} disabled={saving || !glValidation.valid}>
             {saving ? "Saving..." : "Publish"}
           </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            className="text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40"
+            disabled={deleting || saving}
+            onClick={() => {
+              setDeleteError(null);
+              setDeleteDialogOpen(true);
+            }}
+          >
+            Delete page
+          </Button>
         </div>
       </div>
 
@@ -281,6 +330,21 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
               </Button>
             </CardHeader>
             <CardContent className="space-y-5">
+              <PageInsightsSection
+                page={page}
+                insights={pageInsights}
+                insightsLoading={insightsLoading}
+                dismissed={dismissedInsights}
+                onDismiss={(id) =>
+                  setDismissedInsights((prev) => {
+                    const next = new Set(prev);
+                    next.add(id);
+                    return next;
+                  })
+                }
+                setPage={setPage}
+              />
+
               <Section
                 title="Branding & Styling"
                 icon={
@@ -710,21 +774,6 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
                   </div>
                 </div>
               </Section>
-
-              <PageInsightsSection
-                page={page}
-                insights={pageInsights}
-                insightsLoading={insightsLoading}
-                dismissed={dismissedInsights}
-                onDismiss={(id) =>
-                  setDismissedInsights((prev) => {
-                    const next = new Set(prev);
-                    next.add(id);
-                    return next;
-                  })
-                }
-                setPage={setPage}
-              />
             </CardContent>
           </Card>
 
@@ -739,7 +788,7 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
               <div className="admin-editor-inner rounded-2xl border border-zinc-200 bg-white px-4 py-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/30">
                 <div className="text-xs font-medium text-subheading">Public URL</div>
                 <div className="mt-1 flex items-center justify-between gap-3">
-                  <div className="min-w-0 font-mono text-xs text-zinc-700 truncate">
+                  <div className="min-w-0 font-mono text-xs text-zinc-800 truncate dark:text-zinc-100">
                     {publicUrl}
                   </div>
                   <Button
@@ -757,7 +806,7 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
 
               <div className="admin-editor-inner rounded-2xl border border-zinc-200 bg-white px-4 py-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/30">
                 <div className="text-xs font-medium text-subheading">Embeddable iframe</div>
-                <div className="mt-2 rounded-xl border border-zinc-200 bg-zinc-50 p-3 font-mono text-[11px] text-zinc-700 overflow-x-auto">
+                <div className="mt-2 rounded-xl border border-zinc-200 bg-zinc-50 p-3 font-mono text-[11px] text-zinc-800 overflow-x-auto dark:border-zinc-700 dark:bg-zinc-900/70 dark:text-zinc-100">
                   {iframeSnippet}
                 </div>
                 <div className="mt-2 flex justify-end">
@@ -1116,7 +1165,7 @@ function PageInsightsSection({
     <Section
       title="Page Insights"
       icon={
-        <div className="h-9 w-9 rounded-2xl bg-violet-50 border border-violet-100 grid place-items-center text-violet-700 text-sm font-semibold">
+        <div className="h-9 w-9 rounded-2xl bg-violet-50 border border-violet-100 grid place-items-center text-violet-700 text-sm font-semibold dark:bg-violet-500/15 dark:border-violet-500/30 dark:text-violet-200">
           ✦
         </div>
       }
@@ -1124,7 +1173,7 @@ function PageInsightsSection({
       <div className="space-y-3">
         {showAllClear ? (
           <div
-            className="rounded-2xl border border-emerald-200 bg-emerald-50/80 px-4 py-3 text-sm text-emerald-900"
+            className="rounded-2xl border border-emerald-200 bg-emerald-50/80 px-4 py-3 text-sm text-emerald-900 dark:border-emerald-900/60 dark:bg-emerald-950/50 dark:text-emerald-100"
             role="status"
             aria-live="polite"
           >
@@ -1181,7 +1230,9 @@ function InsightSuggestionCard({
       aria-labelledby={titleId}
       className={cn(
         "rounded-2xl border px-4 py-3 shadow-sm",
-        isWarning ? "border-amber-200 bg-amber-50/90" : "border-sky-200 bg-sky-50/90",
+        isWarning
+          ? "border-amber-200 bg-amber-50/90 dark:border-amber-900/60 dark:bg-amber-950/45"
+          : "border-sky-200 bg-sky-50/90 dark:border-sky-900/60 dark:bg-sky-950/45",
       )}
     >
       <div className="flex gap-3">
@@ -1189,17 +1240,23 @@ function InsightSuggestionCard({
           {isWarning ? "⚠️" : "💡"}
         </span>
         <div className="min-w-0 flex-1 space-y-2">
-          <div id={titleId} className="text-sm font-semibold text-zinc-900">
+          <div id={titleId} className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
             {title}
           </div>
-          <p className="text-sm text-zinc-700">{message}</p>
+          <p className="text-sm text-zinc-700 dark:text-zinc-300">{message}</p>
           <div className="flex flex-wrap gap-2 pt-1">
             {hasApply && onApply ? (
               <Button type="button" variant="secondary" size="sm" onClick={onApply}>
                 Apply
               </Button>
             ) : null}
-            <Button type="button" variant="ghost" size="sm" className="text-zinc-700" onClick={onDismiss}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="text-zinc-700 hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/60"
+              onClick={onDismiss}
+            >
               Dismiss
             </Button>
           </div>

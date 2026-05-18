@@ -542,7 +542,7 @@ export default function ReportsUi() {
                   </tr>
                 ) : null}
                 {filteredTx.map((t) => (
-                  <tr key={t.id} className="bg-white hover:bg-zinc-50/80 dark:bg-zinc-950/20">
+                  <tr key={t.id} className="bg-white hover:bg-zinc-50/80 dark:bg-zinc-950/20 dark:hover:bg-zinc-900/55">
                     <td className="px-5 py-4">
                       <div className="font-mono text-xs text-subheading">{t.id}</div>
                       <div className="text-xs text-subheading">
