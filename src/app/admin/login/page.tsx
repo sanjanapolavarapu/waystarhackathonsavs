@@ -114,10 +114,6 @@ export default function AdminLoginPage() {
             <Button variant="primary" className="w-full" type="submit" disabled={loading}>
               {loading ? "Signing in…" : "Sign in"}
             </Button>
-
-            <div className="text-xs text-subheading">
-              Use the same email + password you created in Supabase Auth.
-            </div>
           </form>
 
           <div className="mt-6 space-y-3">
