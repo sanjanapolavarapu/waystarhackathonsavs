@@ -16,6 +16,7 @@ import {
 import { getPageInsights, type PageInsightsMetrics } from "@/lib/analytics";
 import { getPageBySlug, savePage } from "@/lib/db";
 import { validateGlCodes } from "@/lib/gl-code";
+import { SELECTED_ORG_CHANGED_EVENT } from "@/lib/org";
 import type { CustomField, CustomFieldType, PaymentPage } from "@/lib/qpp-types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -96,9 +97,12 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
     }
 
     void loadPage();
+    const onOrgChange = () => void loadPage();
+    window.addEventListener(SELECTED_ORG_CHANGED_EVENT, onOrgChange);
 
     return () => {
       cancelled = true;
+      window.removeEventListener(SELECTED_ORG_CHANGED_EVENT, onOrgChange);
     };
   }, [slug]);
 

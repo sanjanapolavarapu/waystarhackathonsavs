@@ -51,7 +51,7 @@ export async function assertOrgMembership(
 ): Promise<{ ok: true } | { ok: false; status: number; message: string }> {
   const { data, error } = await admin
     .from("organization_members")
-    .select("id")
+    .select("organization_id")
     .eq("organization_id", organizationId)
     .eq("user_id", userId)
     .maybeSingle();

@@ -6,6 +6,7 @@ import * as React from "react";
 
 import { listPages } from "@/lib/db";
 import type { PaymentPage } from "@/lib/qpp-types";
+import { SELECTED_ORG_CHANGED_EVENT } from "@/lib/org";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +24,7 @@ export default function AdminPagesList() {
     async function loadPages() {
       try {
         setError(null);
+        setLoading(true);
         const data = await listPages();
         if (!cancelled) setPages(data);
       } catch (err) {
@@ -36,8 +38,11 @@ export default function AdminPagesList() {
     }
 
     void loadPages();
+    const onOrgChange = () => void loadPages();
+    window.addEventListener(SELECTED_ORG_CHANGED_EVENT, onOrgChange);
     return () => {
       cancelled = true;
+      window.removeEventListener(SELECTED_ORG_CHANGED_EVENT, onOrgChange);
     };
   }, []);
 

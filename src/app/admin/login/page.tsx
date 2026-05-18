@@ -72,10 +72,10 @@ export default function AdminLoginPage() {
     <div className="min-h-[calc(100vh-96px)] flex items-center justify-center">
       <Card className="w-full max-w-md bg-white/80 backdrop-blur">
         <CardHeader>
-          <div className="text-lg font-semibold text-zinc-900 tracking-tight">
+          <div className="text-lg font-semibold text-white tracking-tight">
             Admin Login
           </div>
-          <div className="mt-1 text-sm text-zinc-500">
+          <div className="mt-1 text-sm text-white/70">
             Sign in to access the admin portal
           </div>
         </CardHeader>

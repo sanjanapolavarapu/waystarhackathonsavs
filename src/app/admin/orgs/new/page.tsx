@@ -85,7 +85,7 @@ export default function NewOrganizationPage() {
                     return;
                   }
                   const orgId = String(data ?? "");
-                  if (orgId) setSelectedOrgId(orgId);
+                  if (orgId) setSelectedOrgId(orgId, name.trim());
                   router.replace("/admin/pages");
                   router.refresh();
                 } finally {
