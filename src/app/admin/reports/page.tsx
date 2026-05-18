@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Download } from "lucide-react";
+import Link from "next/link";
 
 import { getSupabaseClient } from "@/lib/supabase";
 import { getSelectedOrgId, SELECTED_ORG_CHANGED_EVENT } from "@/lib/org";
@@ -101,6 +102,8 @@ function toCsv(rows: Record<string, string | number | undefined>[]) {
 
 type TxRow = {
   id: string;
+  organization_id?: string | null;
+  organization_name?: string | null;
   page_slug?: string | null;
   created_at?: string | null;
   status?: string | null;
@@ -109,6 +112,7 @@ type TxRow = {
   amount_cents?: number | null;
   payer_email?: string | null;
   gl_code?: string | null;
+  gl_codes?: string[] | null;
 };
 
 type VisitRow = {
@@ -124,6 +128,7 @@ export default function ReportsUi() {
   const [visitsWarning, setVisitsWarning] = React.useState<string | null>(null);
   const [tx, setTx] = React.useState<TxRow[]>([]);
   const [visits, setVisits] = React.useState<VisitRow[]>([]);
+  const [allOrgs, setAllOrgs] = React.useState(false);
   const [filterDateRange, setFilterDateRange] = React.useState("");
   const [filterPageSlug, setFilterPageSlug] = React.useState("");
   const [filterStatus, setFilterStatus] = React.useState("");
@@ -134,7 +139,7 @@ export default function ReportsUi() {
     const load = async () => {
       const orgId = getSelectedOrgId();
       const supabase = getSupabaseClient();
-      if (!orgId) {
+      if (!orgId && !allOrgs) {
         queueMicrotask(() => {
           if (cancelled) return;
           setError("Select or join an organization to view reports.");
@@ -168,7 +173,7 @@ export default function ReportsUi() {
         if (sessionErr || !sessionData.session?.access_token) throw new Error("Not signed in");
 
         const res = await fetch(
-          `/api/admin/reports-data?organizationId=${encodeURIComponent(orgId)}`,
+          `/api/admin/reports-data?organizationId=${encodeURIComponent(allOrgs ? "all" : (orgId ?? ""))}`,
           {
             headers: { Authorization: `Bearer ${sessionData.session.access_token}` },
             credentials: "include",
@@ -207,7 +212,7 @@ export default function ReportsUi() {
       cancelled = true;
       window.removeEventListener(SELECTED_ORG_CHANGED_EVENT, onOrgChange);
     };
-  }, []);
+  }, [allOrgs]);
 
   const dateRangeParsed = React.useMemo(
     () => parseDateRangeInput(filterDateRange),
@@ -280,6 +285,7 @@ export default function ReportsUi() {
   const csv = toCsv(
     filteredTx.map((t) => ({
       id: t.id,
+      organization: t.organization_name ?? t.organization_id ?? "",
       page: t.page_slug ?? "",
       created_at: t.created_at ?? "",
       status: t.status ?? "",
@@ -313,6 +319,15 @@ export default function ReportsUi() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <label className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white/80 px-3 py-2 text-sm text-zinc-700 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/30 dark:text-zinc-200">
+            <input
+              type="checkbox"
+              className="h-4 w-4 rounded border-zinc-300 text-indigo-600"
+              checked={allOrgs}
+              onChange={(e) => setAllOrgs(e.target.checked)}
+            />
+            All orgs
+          </label>
           <a href={downloadHref} download="transactions.csv">
           <Button variant="secondary">
             <Download className="h-4 w-4" />
@@ -502,6 +517,7 @@ export default function ReportsUi() {
               <thead className="border-t border-zinc-200 bg-zinc-50/70 dark:border-zinc-800 dark:bg-zinc-900/30">
                 <tr className="text-xs font-medium text-zinc-600 dark:text-zinc-300">
                   <th className="px-5 py-3">Transaction</th>
+                  {allOrgs ? <th className="px-5 py-3">Org</th> : null}
                   <th className="px-5 py-3">Page</th>
                   <th className="px-5 py-3">Status</th>
                   <th className="px-5 py-3">Method</th>
@@ -512,7 +528,10 @@ export default function ReportsUi() {
               <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
                 {!loading && filteredTx.length === 0 ? (
                   <tr>
-                    <td className="px-5 py-10 text-center text-sm text-zinc-500 dark:text-zinc-400" colSpan={6}>
+                    <td
+                      className="px-5 py-10 text-center text-sm text-zinc-500 dark:text-zinc-400"
+                      colSpan={allOrgs ? 7 : 6}
+                    >
                       {tx.length === 0
                         ? "No transactions loaded yet."
                         : "No transactions match these filters."}
@@ -527,8 +546,36 @@ export default function ReportsUi() {
                         {t.created_at ? new Date(t.created_at).toLocaleString() : "—"}
                       </div>
                     </td>
+                    {allOrgs ? (
+                      <td className="px-5 py-4 text-zinc-700 dark:text-zinc-300">
+                        <div className="font-medium">
+                          {t.organization_name ?? (t.organization_id ? t.organization_id.slice(0, 8) : "—")}
+                        </div>
+                      </td>
+                    ) : null}
                     <td className="px-5 py-4 text-zinc-800 dark:text-zinc-200">
-                      <div className="font-medium">{t.page_slug ?? "—"}</div>
+                      {t.page_slug ? (
+                        <div className="space-y-1">
+                          <Link
+                            href={`/admin/pages/${encodeURIComponent(t.page_slug)}`}
+                            className="font-medium hover:underline"
+                          >
+                            {t.page_slug}
+                          </Link>
+                          <div>
+                            <a
+                              href={`/pay/${encodeURIComponent(t.page_slug)}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-xs text-zinc-500 hover:text-zinc-700 hover:underline dark:text-zinc-400 dark:hover:text-zinc-200"
+                            >
+                              Open public page
+                            </a>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="font-medium">—</div>
+                      )}
                     </td>
                     <td className="px-5 py-4">
                       {normalizeStatus(t.status) === "succeeded" ? (

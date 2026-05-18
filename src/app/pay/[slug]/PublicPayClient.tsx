@@ -142,7 +142,7 @@ export function PublicPayClient({ slug }: { slug: string }) {
         : "Enter amount";
 
   return (
-    <div className="min-h-screen bg-[#fbfbff] bg-[radial-gradient(1200px_600px_at_15%_20%,rgba(99,102,241,0.12),transparent_60%),radial-gradient(900px_500px_at_90%_10%,rgba(217,70,239,0.10),transparent_55%)] px-6 py-12">
+    <div className="min-h-screen bg-[#fbfbff] dark:bg-zinc-950 bg-[radial-gradient(1200px_600px_at_15%_20%,rgba(99,102,241,0.12),transparent_60%),radial-gradient(900px_500px_at_90%_10%,rgba(217,70,239,0.10),transparent_55%)] dark:bg-[radial-gradient(1200px_600px_at_15%_20%,rgba(99,102,241,0.18),transparent_60%),radial-gradient(900px_500px_at_90%_10%,rgba(217,70,239,0.16),transparent_55%)] px-6 py-12">
       <div className="mx-auto w-full max-w-md">
         {loadError ? (
           <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
@@ -167,24 +167,24 @@ export function PublicPayClient({ slug }: { slug: string }) {
               />
             )}
           </div>
-          <div className="mt-4 text-2xl font-semibold tracking-tight text-zinc-900 text-center">
+          <div className="mt-4 text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 text-center">
             {page.title}
           </div>
           {page.subtitle ? (
-            <div className="mt-1 text-sm text-zinc-500 text-center">{page.subtitle}</div>
+            <div className="mt-1 text-sm text-zinc-500 dark:text-zinc-300 text-center">{page.subtitle}</div>
           ) : null}
         </div>
 
-        <Card className="mt-6 overflow-hidden bg-white/80 backdrop-blur">
-          <div className="bg-zinc-50 px-6 py-5 border-b border-zinc-200">
-            <div className="text-xs font-medium text-zinc-500 text-center">Payment Amount</div>
-            <div className="mt-1 text-3xl font-semibold tracking-tight text-zinc-900 text-center">
+        <Card className="mt-6 overflow-hidden bg-white/80 backdrop-blur dark:bg-zinc-950/30 dark:border-zinc-800">
+          <div className="bg-zinc-50 px-6 py-5 border-b border-zinc-200 dark:bg-zinc-900/40 dark:border-zinc-800">
+            <div className="text-xs font-medium text-zinc-500 dark:text-zinc-400 text-center">Payment Amount</div>
+            <div className="mt-1 text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 text-center">
               {amountText}
             </div>
           </div>
           <CardContent className="p-6 space-y-4">
             {page.headerMessage ? (
-              <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-700">
+              <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950/30 dark:text-zinc-200">
                 {page.headerMessage}
               </div>
             ) : null}
@@ -211,7 +211,7 @@ export function PublicPayClient({ slug }: { slug: string }) {
           </CardContent>
         </Card>
 
-        <div className="mt-5 text-center text-xs text-zinc-500">
+        <div className="mt-5 text-center text-xs text-zinc-500 dark:text-zinc-400">
           Powered by Quick Payment Pages ·{" "}
           <Link className="underline underline-offset-4 hover:text-zinc-700" href="/admin/pages">
             Admin UI

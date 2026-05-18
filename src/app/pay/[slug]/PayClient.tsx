@@ -9,7 +9,11 @@ import { cn } from "@/lib/utils";
 import type { CustomFieldType } from "@/lib/qpp-types";
 
 const selectClassName =
-  "h-11 w-full appearance-none rounded-xl border border-zinc-200 bg-white px-4 text-sm text-zinc-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500";
+  [
+    "h-11 w-full appearance-none rounded-xl border border-zinc-200 bg-white px-4 text-sm text-zinc-900 shadow-sm",
+    "focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500",
+    "dark:border-zinc-800 dark:bg-zinc-950/30 dark:text-zinc-100",
+  ].join(" ");
 
 type AmountMode = "FIXED" | "RANGE" | "USER_ENTERED";
 
@@ -73,13 +77,13 @@ function PayFieldControl({
   onInteract: () => void;
 }) {
   const helper = f.helperText ? (
-    <div className="text-xs text-zinc-500">{f.helperText}</div>
+    <div className="text-xs text-zinc-500 dark:text-zinc-400">{f.helperText}</div>
   ) : null;
 
   switch (f.type) {
     case "CHECKBOX":
       return (
-        <div className="flex items-start gap-3 rounded-xl border border-zinc-100 bg-zinc-50/60 px-3 py-3">
+        <div className="flex items-start gap-3 rounded-xl border border-zinc-100 bg-zinc-50/60 px-3 py-3 dark:border-zinc-800 dark:bg-zinc-950/30">
           <input
             type="checkbox"
             id={f.id}
@@ -91,7 +95,10 @@ function PayFieldControl({
             }}
           />
           <div className="min-w-0 space-y-1">
-            <label htmlFor={f.id} className="text-sm font-medium text-zinc-800 leading-snug cursor-pointer">
+            <label
+              htmlFor={f.id}
+              className="text-sm font-medium text-zinc-800 leading-snug cursor-pointer dark:text-zinc-100"
+            >
               {f.label} {f.required ? <span className="text-red-600">*</span> : null}
             </label>
             {helper}
@@ -103,7 +110,7 @@ function PayFieldControl({
       const opts = f.options ?? [];
       return (
         <div className="space-y-2">
-          <label className="text-xs font-medium text-zinc-600" htmlFor={f.id}>
+          <label className="text-xs font-medium text-zinc-600 dark:text-zinc-300" htmlFor={f.id}>
             {f.label} {f.required ? <span className="text-red-600">*</span> : null}
           </label>
           <select
@@ -133,7 +140,7 @@ function PayFieldControl({
     case "DATE":
       return (
         <div className="space-y-2">
-          <label className="text-xs font-medium text-zinc-600" htmlFor={f.id}>
+          <label className="text-xs font-medium text-zinc-600 dark:text-zinc-300" htmlFor={f.id}>
             {f.label} {f.required ? <span className="text-red-600">*</span> : null}
           </label>
           <Input
@@ -155,7 +162,7 @@ function PayFieldControl({
     case "NUMBER":
       return (
         <div className="space-y-2">
-          <label className="text-xs font-medium text-zinc-600" htmlFor={f.id}>
+          <label className="text-xs font-medium text-zinc-600 dark:text-zinc-300" htmlFor={f.id}>
             {f.label} {f.required ? <span className="text-red-600">*</span> : null}
           </label>
           <Input
@@ -181,7 +188,7 @@ function PayFieldControl({
     default:
       return (
         <div className="space-y-2">
-          <label className="text-xs font-medium text-zinc-600" htmlFor={f.id}>
+          <label className="text-xs font-medium text-zinc-600 dark:text-zinc-300" htmlFor={f.id}>
             {f.label} {f.required ? <span className="text-red-600">*</span> : null}
           </label>
           <Input
@@ -414,7 +421,7 @@ export function PayClient({
       }}
     >
       <div className="space-y-2">
-        <label className="text-xs font-medium text-zinc-600" htmlFor="payer_name">
+        <label className="text-xs font-medium text-zinc-600 dark:text-zinc-300" htmlFor="payer_name">
           Name <span className="text-red-600">*</span>
         </label>
         <Input
@@ -426,7 +433,7 @@ export function PayClient({
         />
       </div>
       <div className="space-y-2">
-        <label className="text-xs font-medium text-zinc-600" htmlFor="payer_email">
+        <label className="text-xs font-medium text-zinc-600 dark:text-zinc-300" htmlFor="payer_email">
           Email <span className="text-red-600">*</span>
         </label>
         <Input
@@ -437,12 +444,12 @@ export function PayClient({
           onChange={(e) => setPayerEmail(e.target.value)}
           required
         />
-        <div className="text-xs text-zinc-500">Receipt will be sent to this email.</div>
+        <div className="text-xs text-zinc-500 dark:text-zinc-400">Receipt will be sent to this email.</div>
       </div>
 
       {amountMode === "USER_ENTERED" || amountMode === "RANGE" ? (
         <div className="space-y-2">
-          <label className="text-xs font-medium text-zinc-600" htmlFor="amount">
+          <label className="text-xs font-medium text-zinc-600 dark:text-zinc-300" htmlFor="amount">
             Amount (USD) <span className="text-red-600">*</span>
           </label>
           <Input
@@ -454,7 +461,7 @@ export function PayClient({
             required
           />
           {amountMode === "RANGE" ? (
-            <div className="text-xs text-zinc-500">
+            <div className="text-xs text-zinc-500 dark:text-zinc-400">
               Min ${minDollars.toFixed(2)} · Max ${maxDollars.toFixed(2)}
             </div>
           ) : null}
@@ -477,7 +484,7 @@ export function PayClient({
 
       {startError ? (
         <div
-          className="text-red-600 text-sm mt-2 font-medium bg-red-50 p-3 rounded-md border border-red-200"
+          className="text-red-600 text-sm mt-2 font-medium bg-red-50 p-3 rounded-md border border-red-200 dark:bg-red-500/10 dark:border-red-500/30 dark:text-red-200"
           role="alert"
         >
           {startError}

@@ -86,7 +86,18 @@ export default function JoinOrganizationPage() {
                     return;
                   }
                   const orgId = String(data ?? "");
-                  if (orgId) setSelectedOrgId(orgId);
+                  if (orgId) {
+                    const { data: orgRow } = await supabase
+                      .from("organizations")
+                      .select("name")
+                      .eq("id", orgId)
+                      .maybeSingle();
+                    const orgName =
+                      orgRow && typeof (orgRow as { name?: unknown }).name === "string"
+                        ? String((orgRow as { name: string }).name).trim()
+                        : "";
+                    setSelectedOrgId(orgId, orgName);
+                  }
                   router.replace("/admin/pages");
                   router.refresh();
                 } finally {

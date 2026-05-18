@@ -11,6 +11,44 @@ import { Input } from "@/components/ui/input";
 import { getSelectedOrgId, setSelectedOrgId } from "@/lib/org";
 import { getSupabaseClient } from "@/lib/supabase";
 
+type OrgRow = {
+  organization_id: string;
+  organizations: { id: string; name: string } | { id: string; name: string }[] | null;
+};
+
+async function selectRemainingOrg(
+  supabase: NonNullable<ReturnType<typeof getSupabaseClient>>,
+  deletedOrgId: string,
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("organization_members")
+    .select("organization_id, organizations:organization_id ( id, name )")
+    .order("created_at", { ascending: false });
+
+  if (error) return false;
+
+  const rows = (data as unknown as OrgRow[] | null) ?? [];
+  const orgs = rows
+    .flatMap((r) => {
+      const o = r.organizations;
+      if (!o) return [];
+      return Array.isArray(o) ? o : [o];
+    })
+    .filter((o): o is { id: string; name: string } => Boolean(o?.id));
+
+  const remaining = [...new Map(orgs.map((o) => [o.id, o])).values()].filter(
+    (o) => o.id !== deletedOrgId,
+  );
+
+  if (remaining.length === 0) {
+    setSelectedOrgId("");
+    return false;
+  }
+
+  setSelectedOrgId(remaining[0].id, remaining[0].name);
+  return true;
+}
+
 export default function DeleteOrganizationPage() {
   const router = useRouter();
   const [orgName, setOrgName] = React.useState<string>("");
@@ -141,8 +179,9 @@ export default function DeleteOrganizationPage() {
                     return;
                   }
 
-                  // Clear selection and bounce back.
-                  setSelectedOrgId("");
+                  // Switch to another org if the user still has memberships; otherwise
+                  // clear selection so OrgRequiredModal prompts create/join on /admin/pages.
+                  await selectRemainingOrg(supabase, orgId);
                   router.replace("/admin/pages");
                   router.refresh();
                 } finally {
