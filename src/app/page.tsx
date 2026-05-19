@@ -44,7 +44,7 @@ export default function Home() {
 
         <section className="mx-auto w-full max-w-[1240px] px-4 pb-14 pt-10 sm:px-6 sm:pt-16">
           <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:items-center">
-            <div className="text-center lg:text-left">
+            <div className="flex flex-col items-center text-center lg:items-start lg:text-left">
               <div className="landing-card inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-xs font-medium text-subheading shadow-sm dark:border-zinc-800 dark:bg-zinc-950/40 dark:text-zinc-200">
                 Launch a payment page in minutes
                 <span className="h-1 w-1 rounded-full bg-zinc-300 dark:bg-zinc-600" />
