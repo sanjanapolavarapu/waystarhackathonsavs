@@ -52,7 +52,7 @@ export default function Home() {
                 <span className="h-1 w-1 rounded-full bg-zinc-300 dark:bg-zinc-600" />
                 Shareable link
               </div>
-              <TypewriterHeroHeadline className="mt-6 text-4xl font-semibold tracking-tight text-heading sm:text-6xl" />
+              <TypewriterHeroHeadline className="mt-6 text-[clamp(1.125rem,2.4vw+0.85rem,3.25rem)] font-semibold tracking-tight text-heading" />
               <p className="mt-4 text-base text-subheading sm:text-lg dark:text-zinc-300">
                 Create a branded payment experience for services, invoices, donations, or fees.
                 Share a URL, embed it on your site, or print a QR.
