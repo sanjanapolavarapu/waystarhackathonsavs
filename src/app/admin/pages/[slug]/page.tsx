@@ -348,13 +348,13 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
               <Section
                 title="Branding & Styling"
                 icon={
-                  <div className="h-9 w-9 rounded-xl bg-violet-100 border border-violet-200 grid place-items-center text-sm font-semibold text-violet-700">
+                  <div className="h-9 w-9 rounded-xl bg-violet-100 border border-violet-200 grid place-items-center text-sm font-semibold text-violet-700 dark:bg-violet-950/50 dark:border-violet-800 dark:text-violet-300">
                     C
                   </div>
                 }
               >
                 <div className="space-y-2">
-                  <div className="text-xs font-medium text-zinc-600">Primary brand color</div>
+                  <div className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Primary brand color</div>
                   <div className="flex flex-wrap gap-2">
                     {BRAND_COLORS.map((c) => (
                       <button
@@ -364,25 +364,25 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
                         className={cn(
                           "h-9 w-14 rounded-lg border transition-all hover:-translate-y-px",
                           c === page.brandColor
-                            ? "border-zinc-300 ring-2 ring-sky-500/40 shadow-sm"
-                            : "border-zinc-200/80 shadow-sm hover:shadow-md",
+                            ? "border-zinc-300 ring-2 ring-sky-500/40 shadow-sm dark:border-zinc-500"
+                            : "border-zinc-200/80 shadow-sm hover:shadow-md dark:border-zinc-700",
                         )}
                         style={{ backgroundColor: c }}
                         aria-label={`Set brand color ${c}`}
                       />
                     ))}
                   </div>
-                  <div className="mt-2 flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-3 py-2 shadow-sm">
+                  <div className="mt-2 flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-3 py-2 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/30">
                     <div
-                      className="h-7 w-7 rounded-xl border border-zinc-200"
+                      className="h-7 w-7 rounded-xl border border-zinc-200 dark:border-zinc-700"
                       style={{ backgroundColor: page.brandColor }}
                       aria-hidden="true"
                     />
-                    <div className="text-sm font-mono text-zinc-700">{page.brandColor}</div>
+                    <div className="text-sm font-mono text-zinc-700 dark:text-zinc-200">{page.brandColor}</div>
                   </div>
 
                   <div className="mt-4 space-y-2">
-                    <label htmlFor="page-logo-url" className="text-xs font-medium text-zinc-600">
+                    <label htmlFor="page-logo-url" className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
                       Logo URL
                     </label>
                     <Input
@@ -397,7 +397,7 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
                       placeholder="https://example.com/logo.png"
                     />
                     <div className="flex items-center justify-between gap-2">
-                      <div className="text-xs text-zinc-500">PNG, JPG, or SVG URL</div>
+                      <div className="text-xs text-zinc-500 dark:text-zinc-400">PNG, JPG, or SVG URL</div>
                       {page.logoUrl ? (
                         <Button
                           type="button"
@@ -412,9 +412,9 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
                     </div>
 
                     {page.logoUrl ? (
-                      <div className="rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm">
-                        <div className="text-xs font-medium text-zinc-600">Logo preview</div>
-                        <div className="mt-2 h-12 w-12 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50">
+                      <div className="rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/30">
+                        <div className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Logo preview</div>
+                        <div className="mt-2 h-12 w-12 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900/50">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={page.logoUrl}

@@ -58,7 +58,7 @@ export function TypewriterHeroHeadline({ className }: { className?: string }) {
   }, [done, reducedMotion]);
 
   return (
-    <h1 className={cn(className)} aria-label={HEADLINE}>
+    <h1 className={cn("inline-block whitespace-nowrap", className)} aria-label={HEADLINE}>
       <span className="inline">
         {HEADLINE.slice(0, charIndex)}
         <TypewriterCursor />
