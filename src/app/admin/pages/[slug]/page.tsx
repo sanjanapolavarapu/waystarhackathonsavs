@@ -556,7 +556,7 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
                           <div className="space-y-1.5">
                             <label
                               htmlFor={`${fieldBaseId}-label`}
-                              className="text-xs font-medium text-zinc-600"
+                              className="text-xs font-medium text-zinc-600 dark:text-zinc-400"
                             >
                               Field label
                             </label>
@@ -580,7 +580,7 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
                               />
                               <label
                                 htmlFor={`${fieldBaseId}-required`}
-                                className="text-sm font-medium text-zinc-700"
+                                className="text-sm font-medium text-zinc-700 dark:text-zinc-300"
                               >
                                 Required
                               </label>
@@ -589,7 +589,7 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
                           <div className="space-y-1.5">
                             <label
                               htmlFor={`${fieldBaseId}-type`}
-                              className="text-xs font-medium text-zinc-600"
+                              className="text-xs font-medium text-zinc-600 dark:text-zinc-400"
                             >
                               Field type
                             </label>
@@ -603,7 +603,7 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
                                   options: nextType === "DROPDOWN" ? f.options ?? [] : [],
                                 });
                               }}
-                              className="relative z-10 h-11 w-full rounded-2xl border border-zinc-200 bg-white px-4 text-sm text-zinc-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500"
+                              className="relative z-10 h-11 w-full rounded-2xl border border-zinc-200 bg-white px-4 text-sm text-zinc-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 dark:border-zinc-800 dark:bg-zinc-950/30 dark:text-zinc-100 dark:focus:ring-indigo-500/30 dark:focus:border-indigo-500"
                             >
                               {FIELD_TYPE_OPTIONS.map((opt) => (
                                 <option key={opt.value} value={opt.value}>
@@ -617,7 +617,7 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
                         <div className="space-y-1.5">
                           <label
                             htmlFor={`${fieldBaseId}-placeholder`}
-                            className="text-xs font-medium text-zinc-600"
+                            className="text-xs font-medium text-zinc-600 dark:text-zinc-400"
                           >
                             Placeholder text
                           </label>
@@ -633,7 +633,7 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
                           <div className="space-y-1.5">
                             <label
                               htmlFor={`${fieldBaseId}-options`}
-                              className="text-xs font-medium text-zinc-600"
+                              className="text-xs font-medium text-zinc-600 dark:text-zinc-400"
                             >
                               Dropdown options (comma-separated)
                             </label>
@@ -707,7 +707,7 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
               <Section
                 title="General Ledger (GL) Codes"
                 icon={
-                  <div className="h-9 w-9 rounded-2xl bg-white border border-zinc-200 grid place-items-center text-zinc-700 font-semibold">
+                  <div className="h-9 w-9 rounded-2xl bg-white border border-zinc-200 grid place-items-center text-zinc-700 font-semibold dark:bg-zinc-950/40 dark:border-zinc-800 dark:text-zinc-200">
                     #
                   </div>
                 }
@@ -745,7 +745,7 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
               <Section
                 title="Confirmation Email Templates"
                 icon={
-                  <div className="h-9 w-9 rounded-2xl bg-white border border-zinc-200 grid place-items-center text-zinc-700 font-semibold">
+                  <div className="h-9 w-9 rounded-2xl bg-white border border-zinc-200 grid place-items-center text-zinc-700 font-semibold dark:bg-zinc-950/40 dark:border-zinc-800 dark:text-zinc-200">
                     @
                   </div>
                 }
@@ -760,13 +760,13 @@ export default function AdminPageEditor({ params }: { params: Promise<{ slug: st
                   </Field>
                   <Field label="Body template">
                     <textarea
-                      className="min-h-28 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
+                      className="min-h-28 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 shadow-sm placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 dark:border-zinc-800 dark:bg-zinc-950/30 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:ring-indigo-500/30 dark:focus:border-indigo-500"
                       value={page.emailBodyTemplate ?? ""}
                       onChange={(e) => setPage((p) => ({ ...p, emailBodyTemplate: e.target.value }))}
                       placeholder="Use variables like {{payer_name}}, {{amount}}, {{transaction_id}}, {{date}}"
                     />
                   </Field>
-                  <div className="text-xs text-zinc-500">
+                  <div className="text-xs text-zinc-500 dark:text-zinc-400">
                     Variables:{" "}
                     <span className="font-mono">
                       {"{{payer_name}} {{amount}} {{transaction_id}} {{date}} {{title}}"}

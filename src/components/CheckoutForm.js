@@ -4,6 +4,26 @@ import { useState } from 'react';
 import { PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import confetti from 'canvas-confetti';
 
+async function finalizePayment(paymentIntentId) {
+  const raw = window.sessionStorage.getItem("qpp_pending_payment");
+  if (!raw) return { ok: true, skipped: true };
+
+  const payload = JSON.parse(raw);
+  window.sessionStorage.removeItem("qpp_pending_payment");
+
+  const res = await fetch("/api/payments/complete", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      ...payload,
+      paymentIntentId,
+    }),
+  });
+
+  const json = await res.json().catch(() => ({}));
+  return { ok: res.ok && json.ok, json };
+}
+
 export default function CheckoutForm({ returnUrl }) {
   const stripe = useStripe();
   const elements = useElements();
@@ -20,8 +40,6 @@ export default function CheckoutForm({ returnUrl }) {
     setIsProcessing(true);
     setMessage(null);
 
-    // Confirm payment but only redirect when required (3DS, bank auth, etc).
-    // This lets us show a fun success moment for instant-confirm methods.
     const { error, paymentIntent } = await stripe.confirmPayment({
       elements,
       redirect: 'if_required',
@@ -42,7 +60,7 @@ export default function CheckoutForm({ returnUrl }) {
 
     if (paymentIntent?.status === 'succeeded') {
       setIsSuccess(true);
-      setMessage("Payment successful! Redirecting…");
+      setMessage("Payment successful! Sending receipt…");
 
       confetti({
         particleCount: 160,
@@ -52,33 +70,29 @@ export default function CheckoutForm({ returnUrl }) {
         colors: ['#8b5cf6', '#10b981', '#3b82f6', '#0ea5e9'],
       });
 
-      setTimeout(() => {
-        // Best-effort: finalize transaction + email receipt (hackathon flow).
-        try {
-          const raw = window.sessionStorage.getItem("qpp_pending_payment");
-          if (raw) {
-            const payload = JSON.parse(raw);
-            window.sessionStorage.removeItem("qpp_pending_payment");
-            void fetch("/api/payments/complete", {
-              method: "POST",
-              headers: { "content-type": "application/json" },
-              body: JSON.stringify(payload),
-            });
-          }
-        } catch {
-          // ignore
-        }
+      let receiptOk = true;
+      try {
+        const result = await finalizePayment(paymentIntent.id);
+        receiptOk = result.ok !== false;
+      } catch {
+        receiptOk = false;
+      }
 
+      setMessage(
+        receiptOk
+          ? "Payment successful! Redirecting…"
+          : "Payment successful! Receipt email may be delayed — redirecting…",
+      );
+
+      setTimeout(() => {
         const base = returnUrl || `${window.location.origin}/pay/success`;
         const url = new URL(base, window.location.origin);
         url.searchParams.set("pi", paymentIntent.id);
         window.location.assign(url.toString());
-      }, 1200);
+      }, receiptOk ? 1200 : 1800);
       return;
     }
 
-    // For any non-redirected non-succeeded state, send the user to the success page
-    // which can show a consistent post-payment UX (and Stripe will prevent false positives).
     setIsProcessing(false);
   };
 

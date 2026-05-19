@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 
 export default function PayTestPage() {
   return (
-    <div className="min-h-screen bg-[#fbfbff] bg-[radial-gradient(1200px_600px_at_15%_20%,rgba(99,102,241,0.10),transparent_60%),radial-gradient(900px_500px_at_90%_10%,rgba(217,70,239,0.08),transparent_55%)] px-6 py-14">
+    <div className="min-h-full bg-[#fbfbff] bg-[radial-gradient(1200px_600px_at_15%_20%,rgba(99,102,241,0.10),transparent_60%),radial-gradient(900px_500px_at_90%_10%,rgba(217,70,239,0.08),transparent_55%)] px-6 py-14">
       <div className="mx-auto w-full max-w-xl space-y-5">
         <div>
           <div className="text-2xl font-semibold tracking-tight text-zinc-900">

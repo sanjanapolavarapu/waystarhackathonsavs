@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 
+import {
+  receiptInputFromPaymentIntent,
+  sendPaymentReceipt,
+} from "@/lib/send-payment-receipt";
 import { getStripeServer } from "@/lib/stripe";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -109,5 +113,28 @@ export async function POST(req: Request) {
     }
   }
 
-  return NextResponse.json({ ok: true, status: txStatus });
+  let receipt:
+    | { sent: true; emailPreviewUrl: string | null; alreadySent?: boolean }
+    | { sent: false; error: string }
+    | null = null;
+
+  if (txStatus === "succeeded") {
+    const receiptInput = receiptInputFromPaymentIntent(pi);
+    if (receiptInput?.payerEmail) {
+      const emailResult = await sendPaymentReceipt(receiptInput);
+      if (emailResult.ok) {
+        receipt = {
+          sent: true,
+          emailPreviewUrl: emailResult.emailPreviewUrl,
+          alreadySent: emailResult.alreadySent,
+        };
+      } else {
+        receipt = { sent: false, error: emailResult.error };
+      }
+    } else {
+      receipt = { sent: false, error: "missing_payer_email" };
+    }
+  }
+
+  return NextResponse.json({ ok: true, status: txStatus, receipt });
 }

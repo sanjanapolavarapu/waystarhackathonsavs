@@ -369,6 +369,7 @@ export function PayClient({
           amount: resolvedAmountCents,
           payerName: payerName.trim(),
           payerEmail: payerEmail.trim(),
+          customResponses: fieldValues,
         }),
       });
 

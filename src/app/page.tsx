@@ -16,7 +16,7 @@ const ctaPrimaryClass = `landing-cta-primary inline-flex h-11 items-center justi
 
 export default function Home() {
   return (
-    <main className="landing-shell min-h-screen bg-[#f9fafb] text-heading dark:bg-background dark:text-foreground">
+    <main className="landing-shell min-h-full bg-[#f9fafb] text-heading dark:bg-background dark:text-foreground">
       <div className="relative isolate overflow-hidden">
         <div
           className="absolute inset-0 -z-10 hidden bg-center bg-cover opacity-25 dark:block"

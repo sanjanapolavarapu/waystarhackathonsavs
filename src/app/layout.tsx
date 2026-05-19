@@ -27,7 +27,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full min-h-dvh antialiased`}
       suppressHydrationWarning
     >
       <head>
@@ -37,13 +37,11 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="flex min-h-full flex-col">
+      <body className="grid min-h-dvh grid-rows-[1fr_auto]">
         <ThemeProvider>
-          <div className="flex min-h-full flex-1 flex-col">
-            <div className="flex-1">{children}</div>
-            <SiteFooter />
-          </div>
+          <div className="min-h-0 min-w-0 overflow-x-hidden overflow-y-auto">{children}</div>
         </ThemeProvider>
+        <SiteFooter />
       </body>
     </html>
   );

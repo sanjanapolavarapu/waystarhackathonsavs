@@ -43,6 +43,6 @@ export async function sendEmail(msg: Email) {
   });
 
   const url = nodemailer.getTestMessageUrl(info);
-  return { messageId: info.messageId, previewUrl: url ?? null };
+  return { messageId: info.messageId, previewUrl: typeof url === "string" ? url : null };
 }
 
