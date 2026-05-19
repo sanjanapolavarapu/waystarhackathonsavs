@@ -1,5 +1,9 @@
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
+import {
+  receiptInputFromPaymentIntent,
+  sendPaymentReceipt,
+} from '@/lib/send-payment-receipt';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { getStripeServer } from '@/lib/stripe';
 
@@ -101,6 +105,16 @@ export async function POST(req) {
       }
     } else {
       console.warn("Supabase env missing; skipping webhook persistence.");
+    }
+
+    if (event.type === 'payment_intent.succeeded') {
+      const receiptInput = receiptInputFromPaymentIntent(paymentIntent);
+      if (receiptInput?.payerEmail) {
+        const emailResult = await sendPaymentReceipt(receiptInput);
+        if (!emailResult.ok) {
+          console.error('Receipt email failed:', emailResult.error);
+        }
+      }
     }
   }
 

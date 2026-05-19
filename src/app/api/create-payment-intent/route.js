@@ -13,7 +13,7 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { amount, payerEmail, payerName, pageSlug } = body;
+    const { amount, payerEmail, payerName, pageSlug, customResponses } = body;
 
     if (!Number.isFinite(amount) || amount <= 0) {
       return NextResponse.json({ error: 'Invalid amount.' }, { status: 400 });
@@ -48,6 +48,25 @@ export async function POST(request) {
       ...(pageId ? { page_id: String(pageId) } : {}),
       ...(organizationId ? { organization_id: String(organizationId) } : {}),
     };
+
+    if (customResponses && typeof customResponses === "object" && !Array.isArray(customResponses)) {
+      const entries = Object.entries(customResponses).filter(
+        ([, v]) => typeof v === "string",
+      );
+      let json = JSON.stringify(Object.fromEntries(entries));
+      if (json.length > 500) {
+        const trimmed = {};
+        for (const [k, v] of entries) {
+          const next = JSON.stringify({ ...trimmed, [k]: v });
+          if (next.length > 500) break;
+          trimmed[k] = v;
+        }
+        json = JSON.stringify(trimmed);
+      }
+      if (json.length <= 500) {
+        metadata.custom_responses = json;
+      }
+    }
 
     const piCreate = {
       amount,

@@ -2,14 +2,9 @@ import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import {
-  DEFAULT_EMAIL_SUBJECT,
-  DEFAULT_EMAIL_TEMPLATE,
-  parseEmailTemplate,
-} from "@/lib/email-template";
-import { sendEmail } from "@/lib/email";
 import { isValidGlCode, validateGlCodes } from "@/lib/gl-code";
 import { getPageBySlug } from "@/lib/mock-qpp";
+import { sendPaymentReceipt } from "@/lib/send-payment-receipt";
 import { getSupabaseServerClient } from "@/lib/supabase-server";
 
 const requestSchema = z.object({
@@ -19,22 +14,20 @@ const requestSchema = z.object({
   payerEmail: z.string().email(),
   paymentMethod: z.enum(["card", "wallet", "ach"]).default("card"),
   customResponses: z.record(z.string(), z.string()).default({}),
+  paymentIntentId: z.string().optional(),
 });
 
 type PageConfig = {
   id?: string;
-  title: string;
   glCodes: string[];
-  emailSubject: string;
-  emailTemplate: string;
 };
 
-async function getPageConfig(pageSlug: string): Promise<PageConfig | null> {
+async function getPageGlConfig(pageSlug: string): Promise<PageConfig | null> {
   const supabase = getSupabaseServerClient();
   if (supabase) {
     const result = await supabase
       .from("payment_pages")
-      .select("id, title, gl_codes, email_subject, email_template, gl_code")
+      .select("id, gl_codes, gl_code")
       .eq("slug", pageSlug)
       .maybeSingle();
 
@@ -44,22 +37,14 @@ async function getPageConfig(pageSlug: string): Promise<PageConfig | null> {
 
       return {
         id: result.data.id ?? undefined,
-        title: result.data.title ?? "Payment Page",
         glCodes: glCodesFromArray.length > 0 ? glCodesFromArray : legacyGlCode ? [legacyGlCode] : [],
-        emailSubject: result.data.email_subject || DEFAULT_EMAIL_SUBJECT,
-        emailTemplate: result.data.email_template || DEFAULT_EMAIL_TEMPLATE,
       };
     }
   }
 
   const mock = getPageBySlug(pageSlug);
   if (!mock) return null;
-  return {
-    title: mock.title,
-    glCodes: mock.glCodes,
-    emailSubject: mock.emailSubjectTemplate || DEFAULT_EMAIL_SUBJECT,
-    emailTemplate: mock.emailBodyTemplate || DEFAULT_EMAIL_TEMPLATE,
-  };
+  return { glCodes: mock.glCodes };
 }
 
 export async function POST(req: Request) {
@@ -70,7 +55,7 @@ export async function POST(req: Request) {
   }
 
   const payload = parsed.data;
-  const pageConfig = await getPageConfig(payload.pageSlug);
+  const pageConfig = await getPageGlConfig(payload.pageSlug);
   if (!pageConfig) {
     return NextResponse.json({ ok: false, error: "page_not_found" }, { status: 404 });
   }
@@ -89,13 +74,6 @@ export async function POST(req: Request) {
 
   const transactionId = randomUUID();
   const now = new Date();
-  const amountText = payload.amount.toLocaleString(undefined, { style: "currency", currency: "USD" });
-  const normalizedCustomFields = Object.fromEntries(
-    Object.entries(payload.customResponses).map(([k, v]) => [
-      k.toLowerCase().trim().replaceAll(/\s+/g, "_"),
-      v,
-    ]),
-  );
 
   const supabase = getSupabaseServerClient();
   if (supabase) {
@@ -110,6 +88,9 @@ export async function POST(req: Request) {
       custom_responses: payload.customResponses,
       gl_codes: pageConfig.glCodes,
       created_at: now.toISOString(),
+      ...(payload.paymentIntentId
+        ? { stripe_payment_intent_id: payload.paymentIntentId }
+        : {}),
     };
     const { error } = await supabase.from("transactions").insert(transactionRecord);
     if (error) {
@@ -120,23 +101,18 @@ export async function POST(req: Request) {
     }
   }
 
-  const subject = pageConfig.emailSubject || DEFAULT_EMAIL_SUBJECT;
-  const parsedBody = parseEmailTemplate(pageConfig.emailTemplate || DEFAULT_EMAIL_TEMPLATE, {
-    payer_name: payload.payerName,
-    amount: amountText,
-    transaction_id: transactionId,
-    date: now.toLocaleDateString(),
-    title: pageConfig.title,
-    custom_fields: normalizedCustomFields,
+  const emailResult = await sendPaymentReceipt({
+    pageSlug: payload.pageSlug,
+    amountDollars: payload.amount,
+    payerName: payload.payerName,
+    payerEmail: payload.payerEmail,
+    paymentMethod: payload.paymentMethod,
+    customResponses: payload.customResponses,
+    transactionId,
+    paymentIntentId: payload.paymentIntentId,
   });
 
-  const emailResult = await sendEmail({
-    to: payload.payerEmail,
-    subject,
-    html: parsedBody.replaceAll("\n", "<br />"),
-  }).catch((error) => ({ error: error instanceof Error ? error.message : "email_failed" }));
-
-  if ("error" in emailResult) {
+  if (!emailResult.ok) {
     return NextResponse.json(
       {
         ok: false,
@@ -150,8 +126,9 @@ export async function POST(req: Request) {
 
   return NextResponse.json({
     ok: true,
-    transactionId,
-    emailPreviewUrl: emailResult.previewUrl,
+    transactionId: emailResult.transactionId,
+    emailPreviewUrl: emailResult.emailPreviewUrl,
+    receiptAlreadySent: emailResult.alreadySent ?? false,
     glCodes: pageConfig.glCodes.filter((code) => isValidGlCode(code)),
   });
 }

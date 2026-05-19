@@ -74,7 +74,7 @@ export function PublicPayClient({
 
   if (!page) {
     return (
-      <div className="min-h-screen px-6 py-16">
+      <div className="min-h-full px-6 py-16">
         <div className="mx-auto max-w-md text-center">
           <div className="text-xl font-semibold text-zinc-900">Page not found</div>
           <div className="mt-2 text-sm text-zinc-500">This payment page doesn’t exist.</div>
@@ -93,7 +93,7 @@ export function PublicPayClient({
 
   if (!page.isActive) {
     return (
-      <div className="min-h-screen px-6 py-16">
+      <div className="min-h-full px-6 py-16">
         <div className="mx-auto max-w-md text-center">
           <div className="text-xl font-semibold text-zinc-900">Page disabled</div>
           <div className="mt-2 text-sm text-zinc-500">
@@ -117,7 +117,7 @@ export function PublicPayClient({
         : "Enter amount";
 
   return (
-    <div className="min-h-screen bg-[#fbfbff] dark:bg-zinc-950 bg-[radial-gradient(1200px_600px_at_15%_20%,rgba(99,102,241,0.12),transparent_60%),radial-gradient(900px_500px_at_90%_10%,rgba(217,70,239,0.10),transparent_55%)] dark:bg-[radial-gradient(1200px_600px_at_15%_20%,rgba(99,102,241,0.18),transparent_60%),radial-gradient(900px_500px_at_90%_10%,rgba(217,70,239,0.16),transparent_55%)] px-6 py-12">
+    <div className="min-h-full bg-[#fbfbff] dark:bg-zinc-950 bg-[radial-gradient(1200px_600px_at_15%_20%,rgba(99,102,241,0.12),transparent_60%),radial-gradient(900px_500px_at_90%_10%,rgba(217,70,239,0.10),transparent_55%)] dark:bg-[radial-gradient(1200px_600px_at_15%_20%,rgba(99,102,241,0.18),transparent_60%),radial-gradient(900px_500px_at_90%_10%,rgba(217,70,239,0.16),transparent_55%)] px-6 py-12">
       <div className="mx-auto w-full max-w-md">
         <div className="flex flex-col items-center">
           <div className="h-14 w-14 shrink-0 rounded-full border border-zinc-200 bg-white shadow-sm grid place-items-center overflow-hidden p-1.5">
